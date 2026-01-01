@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.1.145:8000/api/v1';
+const API_URL = 'http://10.222.228.141:8000/api/v1';
 
 export const login = async (email, password) => {
     const response = await fetch(`${API_URL}/users.php`, {
