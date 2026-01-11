@@ -1,0 +1,201 @@
+### Comprehensive Guide to Kora Backend API Usage in the Mobile App
+
+This guide details how the Kora mobile application interacts with the PHP backend API. It covers the overall structure, how to identify endpoints, general principles for API calls, and specific usage examples for each available API.
+
+#### 1. Understanding the Backend Structure
+
+The Kora backend follows a simple MVC-like pattern.
+
+*   **`backend/core/initialize.php`**: This file sets up the database connection and includes necessary model files. It's the entry point for all API requests.
+*   **`backend/api/v1/`**: This directory contains the API endpoints (`.php` files). Each file typically handles requests for a specific resource (e.g., users, matches, pitches).
+*   **`backend/models/`**: This directory defines the data models (e.g., `User.php`, `Match.php`, `Pitch.php`). Each model interacts with its corresponding database table.
+
+#### 2. Finding API Endpoints
+
+API endpoints are PHP files located within the `backend/api/v1/` directory. Each file's name generally indicates the resource it manages. For example:
+
+*   `users.php`: Handles operations related to user accounts (registration, login, user stats).
+*   `matches.php`: Manages match-related operations (creating, joining, getting details, updating stats).
+*   `pitches.php`: Handles operations related to pitches (currently, only creation).
+
+The full API endpoint URL is constructed using the base `API_URL` (defined in `mobile/src/services/api.js`) concatenated with the endpoint file name. For example, `http://192.168.1.145/api/v1/users.php`.
+
+#### 3. API Usage from the Mobile App (General Principles)
+
+The mobile app uses standard JavaScript `fetch` API to communicate with the backend. All API interactions are encapsulated in functions within `mobile/src/services/api.js`.
+
+**Common patterns:**
+
+*   **`API_URL` Constant:** The base URL for all API requests is `const API_URL = 'http://192.168.1.145/api/v1';` (or whatever the configured IP/port is).
+*   **HTTP Methods:** Requests use appropriate HTTP methods (GET, POST, PUT, PATCH) based on the operation.
+*   **Request Headers:** For POST, PUT, and PATCH requests, the `Content-Type` header is set to `application/json` to indicate that the request body is JSON.
+    ```javascript
+    headers: { 'Content-Type': 'application/json' }
+    ```
+*   **Request Body:** For POST, PUT, and PATCH requests, data is sent in the request body as a JSON string using `JSON.stringify()`.
+    ```javascript
+    body: JSON.stringify(yourData)
+    ```
+*   **Response Handling:** The `fetch` API returns a Promise. The response is usually parsed as JSON using `response.json()`.
+*   **Error Handling:** API functions typically return an object indicating `success` or `message` on failure. The mobile app's screens handle these responses and display appropriate alerts.
+
+#### 4. Specific API Endpoints and Their Usage
+
+Here's a detailed breakdown of each API endpoint:
+
+---
+
+##### 4.1. `users.php` (User Management)
+
+**Purpose:** Handles user registration, login, and fetching user statistics.
+
+**Supported Methods:** GET, POST
+
+**Frontend Functions (`mobile/src/services/api.js`):** `login`, `register`, `getUserStats`
+
+**Details:**
+
+*   **`GET` Request:**
+    *   **To get all users (not directly used by mobile app currently):**
+        *   **URL:** `${API_URL}/users.php`
+        *   **Parameters:** None
+        *   **Expected Response:** An array of user objects (id, username, email, user_type).
+    *   **To get user statistics:**
+        *   **URL:** `${API_URL}/users.php?stats_for_user_id={userId}`
+        *   **Parameters:** `stats_for_user_id` (integer)
+        *   **Frontend Function:** `getUserStats(userId)`
+        *   **Expected Response (on success):** `{ matches_played: 10, total_goals: 5, total_assists: 8 }`
+        *   **Expected Response (on failure):** `{ message: 'Stats not found' }`
+
+*   **`POST` Request:**
+    *   **To register a new user:**
+        *   **URL:** `${API_URL}/users.php`
+        *   **Request Body:**
+            ```json
+            {
+                "type": "register",
+                "username": "newuser",
+                "email": "newuser@example.com",
+                "password": "password123",
+                "user_type": "player"
+            }
+            ```
+        *   **Frontend Function:** `register(userData)`
+        *   **Expected Response (on success):** `{ message: 'User registered' }`
+        *   **Expected Response (on failure):** `{ message: 'User not registered' }` (e.g., if email already exists)
+    *   **To log in a user:**
+        *   **URL:** `${API_URL}/users.php`
+        *   **Request Body:**
+            ```json
+            {
+                "type": "login",
+                "email": "user@example.com",
+                "password": "password123"
+            }
+            ```
+        *   **Frontend Function:** `login(email, password)`
+        *   **Expected Response (on success):** `{ id: 1, username: "user", email: "user@example.com", user_type: "player", ... }` (user object)
+        *   **Expected Response (on failure):** `{ message: 'Login failed' }`
+
+---
+
+##### 4.2. `matches.php` (Match Management)
+
+**Purpose:** Handles creation, retrieval, joining, and updating player statistics for matches.
+
+**Supported Methods:** GET, POST, PUT, PATCH
+
+**Frontend Functions (`mobile/src/services/api.js`):** `getPublicMatches`, `getMatchDetails`, `createMatch`, `joinMatch`, `updatePlayerStats`
+
+**Details:**
+
+*   **`GET` Request:**
+    *   **To get all public and scheduled matches:**
+        *   **URL:** `${API_URL}/matches.php`
+        *   **Parameters:** None
+        *   **Frontend Function:** `getPublicMatches()`
+        *   **Expected Response:** An array of match objects, each including `pitch_name`.
+    *   **To get details of a specific match:**
+        *   **URL:** `${API_URL}/matches.php?id={matchId}`
+        *   **Parameters:** `id` (integer)
+        *   **Frontend Function:** `getMatchDetails(matchId)`
+        *   **Expected Response (on success):** A match object, including a `players` array with details of players who have joined.
+        *   **Expected Response (on failure):** `{ message: 'Match not found' }`
+
+*   **`POST` Request:**
+    *   **To create a new match:**
+        *   **URL:** `${API_URL}/matches.php`
+        *   **Request Body:**
+            ```json
+            {
+                "pitch_id": 1,
+                "creator_id": 1,
+                "match_type": "public",
+                "match_size": "5v5",
+                "duration": 90,
+                "match_date": "2026-01-10 19:00:00"
+            }
+            ```
+        *   **Frontend Function:** `createMatch(matchData)`
+        *   **Expected Response (on success):** `{ message: 'Match Created' }`
+        *   **Expected Response (on failure):** `{ message: 'Match Not Created' }`
+
+*   **`PATCH` Request:**
+    *   **To join a match:**
+        *   **URL:** `${API_URL}/matches.php`
+        *   **Request Body:**
+            ```json
+            {
+                "match_id": 1,
+                "player_id": 2
+            }
+            ```
+        *   **Frontend Function:** `joinMatch(matchId, playerId)`
+        *   **Expected Response (on success):** `{ message: 'Player joined match' }`
+        *   **Expected Response (on failure):** `{ message: 'Could not join match' }`
+
+*   **`PUT` Request:**
+    *   **To update player statistics for a match:**
+        *   **URL:** `${API_URL}/matches.php`
+        *   **Request Body:**
+            ```json
+            {
+                "match_id": 1,
+                "player_id": 2,
+                "goals": 3,
+                "assists": 1
+            }
+            ```
+        *   **Frontend Function:** `updatePlayerStats(statsData)`
+        *   **Expected Response (on success):** `{ message: 'Player stats updated' }`
+        *   **Expected Response (on failure):** `{ message: 'Player stats not updated' }`
+
+---
+
+##### 4.3. `pitches.php` (Pitch Management)
+
+**Purpose:** Handles the creation of new pitches.
+
+**Supported Methods:** POST
+
+**Frontend Functions (`mobile/src/services/api.js`):** `createPitch`
+
+**Details:**
+
+*   **`POST` Request:**
+    *   **To create a new pitch:**
+        *   **URL:** `${API_URL}/pitches.php`
+        *   **Request Body:**
+            ```json
+            {
+                "name": "Central Park Pitch 1",
+                "location": "Central Park, New York",
+                "owner_id": 1
+            }
+            ```
+        *   **Frontend Function:** `createPitch(pitchData)`
+        *   **Expected Response (on success):** `{ success: true, message: 'Pitch created successfully.' }`
+        *   **Expected Response (on failure - due to missing data):** `{ message: 'Pitch creation failed. Incomplete data.' }` (HTTP 400)
+        *   **Expected Response (on failure - due to backend error):** `{ success: false, message: 'Pitch creation failed.' }`
+
+---

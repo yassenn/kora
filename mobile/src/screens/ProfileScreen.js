@@ -1,56 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, ActivityIndicator, Alert } from 'react-native';
+import Button from '../components/Button';
+import { globalStyles } from '../utils/styles';
+import { getUserStats } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
     const [userStats, setUserStats] = useState(null);
-    const userId = '1'; // Hardcoded for now
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const { user, logout } = useAuth();
+    const userId = user?.id;
 
     useEffect(() => {
-        // TODO: Fetch user stats from API
-        const dummyStats = {
-            matches_played: 10,
-            total_goals: 5,
-            total_assists: 8,
+        let mounted = true;
+        const fetchStats = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await getUserStats(userId);
+                if (!mounted) return;
+                if (res && !res.message) setUserStats(res);
+                else setError(res?.message || 'Stats not found');
+            } catch (err) {
+                if (!mounted) return;
+                setError(err.message || 'Network error');
+            } finally {
+                if (mounted) setLoading(false);
+            }
         };
-        setUserStats(dummyStats);
+
+        if (userId) fetchStats();
+        return () => { mounted = false; };
     }, [userId]);
 
-    const handleLogout = () => {
-        // TODO: Implement logout logic
-        console.log('Logout pressed');
+    const handleLogout = async () => {
+        await logout();
+        Alert.alert('Logout', 'You have been logged out.');
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Your Stats</Text>
+        <View style={globalStyles.container}>
+            <Text style={globalStyles.title}>Your Stats</Text>
             {userStats ? (
-                <View>
-                    <Text style={styles.stat}>Matches Played: {userStats.matches_played}</Text>
-                    <Text style={styles.stat}>Total Goals: {userStats.total_goals}</Text>
-                    <Text style={styles.stat}>Total Assists: {userStats.total_assists}</Text>
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.stat}>Matches Played: {userStats.matches_played}</Text>
+                    <Text style={globalStyles.stat}>Total Goals: {userStats.total_goals}</Text>
+                    <Text style={globalStyles.stat}>Total Assists: {userStats.total_assists}</Text>
                 </View>
             ) : (
                 <Text>Loading stats...</Text>
             )}
+            <Button title="Create Pitch" onPress={() => navigation.navigate('CreatePitch')} />
             <Button title="Logout" onPress={handleLogout} />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    stat: {
-        fontSize: 18,
-        marginBottom: 10,
-    }
-});
 
 export default ProfileScreen;

@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { globalStyles } from '../utils/styles';
-import { getPublicMatches } from '../services/api';
+import { getPitches } from '../services/api';
 
-const MatchesListScreen = ({ navigation }) => {
-    const [matches, setMatches] = useState([]);
+const PitchesListScreen = ({ navigation }) => {
+    const [pitches, setPitches] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         let mounted = true;
-        const fetchMatches = async () => {
+        const fetchPitches = async () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await getPublicMatches();
+                const res = await getPitches();
                 if (!mounted) return;
-                if (Array.isArray(res)) setMatches(res);
+                if (Array.isArray(res)) setPitches(res);
                 else setError(res?.message || 'Unexpected response from server');
             } catch (err) {
                 if (!mounted) return;
@@ -26,16 +26,16 @@ const MatchesListScreen = ({ navigation }) => {
             }
         };
 
-        fetchMatches();
+        fetchPitches();
         return () => { mounted = false; };
     }, []);
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => navigation.navigate('MatchDetails', { matchId: item.id })}>
+        <TouchableOpacity onPress={() => navigation.navigate('PitchDetails', { pitchId: item.id })}>
             <View style={globalStyles.card}>
-                <Text style={globalStyles.cardTitle}>{item.pitch_name}</Text>
-                <Text>{new Date(item.match_date).toLocaleString()}</Text>
-                <Text>{item.match_size}</Text>
+                <Text style={globalStyles.cardTitle}>{item.name}</Text>
+                <Text>{item.location}</Text>
+                <Text>Status: {item.status}</Text>
             </View>
         </TouchableOpacity>
     );
@@ -48,20 +48,13 @@ const MatchesListScreen = ({ navigation }) => {
                 <Text style={{ color: 'red', margin: 16 }}>{error}</Text>
             ) : (
                 <FlatList
-                    data={matches}
+                    data={pitches}
                     renderItem={renderItem}
-                    keyExtractor={item => item.id}
+                    keyExtractor={item => String(item.id)}
                 />
             )}
-
-            <TouchableOpacity
-                style={globalStyles.primaryButton}
-                onPress={() => navigation.navigate('CreateMatch')}
-            >
-                <Text style={globalStyles.primaryButtonText}>Create New Match</Text>
-            </TouchableOpacity>
         </View>
     );
 };
 
-export default MatchesListScreen;
+export default PitchesListScreen;

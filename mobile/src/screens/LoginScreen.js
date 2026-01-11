@@ -1,58 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Alert } from 'react-native';
+import Button from '../components/Button';
+import { globalStyles, colors } from '../utils/styles';
+import { useAuth } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = () => {
-        // TODO: Implement login logic
-        console.log('Login pressed');
+    const { login: authLogin } = useAuth();
+
+    const handleLogin = async () => {
+        try {
+            const response = await authLogin(email, password);
+            if (response && response.id) {
+                navigation.navigate('Main');
+            }
+        } catch (error) {
+            Alert.alert('Login Failed', error.message || 'Invalid email or password');
+        }
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Kickoff</Text>
+        <View style={globalStyles.container}>
+            <Text style={globalStyles.title}>Kora</Text>
             <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                placeholderTextColor={colors.gray}
             />
             <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                placeholderTextColor={colors.gray}
             />
             <Button title="Login" onPress={handleLogin} />
             <Button title="Go to Register" onPress={() => navigation.navigate('Register')} />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 16,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 24,
-    },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        marginBottom: 12,
-        padding: 10,
-    },
-});
 
 export default LoginScreen;

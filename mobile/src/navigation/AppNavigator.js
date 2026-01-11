@@ -8,8 +8,11 @@ import MatchesListScreen from '../screens/MatchesListScreen';
 import CreateMatchScreen from '../screens/CreateMatchScreen';
 import MatchDetailsScreen from '../screens/MatchDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import CreatePitchScreen from '../screens/CreatePitchScreen';
+import PitchesListScreen from '../screens/PitchesListScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import { colors } from '../utils/styles';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,16 +34,27 @@ const HomeStack = () => (
 const ProfileStack = () => (
     <Stack.Navigator>
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="CreatePitch" component={CreatePitchScreen} options={{ title: 'Create Pitch' }} />
     </Stack.Navigator>
 );
 
 const MainTabs = () => (
-    <Tab.Navigator>
-        <Tab.Screen name="Home" component={HomeStack} />
+    <Tab.Navigator
+        screenOptions={{
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.gray,
+            tabBarStyle: {
+                backgroundColor: colors.white,
+            },
+        }}
+    >
+        <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Home' }} />
         <Tab.Screen name="Matches" component={MatchesStack} />
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen name="Pitches" component={PitchesListScreen} options={{ title: 'Pitches' }} />
+        <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
 );
+
 
 const AuthStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -51,22 +65,14 @@ const AuthStack = () => (
 
 
 const AppNavigator = () => {
-    // For now, we assume the user is logged in and directly show the main app.
-    // In a real app, you would have logic to switch between AuthStack and MainTabs.
-    const isSignedIn = true; 
-
     return (
         <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {isSignedIn ? (
-                    <Stack.Screen name="Main" component={MainTabs} />
-                ) : (
-                    <Stack.Screen name="Auth" component={AuthStack} />
-                )}
+            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Auth">
+                <Stack.Screen name="Auth" component={AuthStack} />
+                <Stack.Screen name="Main" component={MainTabs} />
             </Stack.Navigator>
         </NavigationContainer>
     );
 };
 
 export default AppNavigator;
-

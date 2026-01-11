@@ -1,61 +1,90 @@
-const API_URL = 'http://10.222.228.141:8000/api/v1';
+const API_URL = 'http://10.70.155.141/api/v1';
 
+let AUTH_TOKEN = null;
+
+export const setAuthToken = (token) => { AUTH_TOKEN = token; };
+
+const buildHeaders = (isJson = false) => {
+    const headers = {};
+    if (isJson) headers['Content-Type'] = 'application/json';
+    if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
+    return headers;
+};
+// Helper to fetch and parse JSON with better errors when server returns HTML or non-JSON
+const fetchJson = async (url, options) => {
+    const response = await fetch(url, options);
+    const text = await response.text();
+    if (!response.ok) {
+        const snippet = text ? text.trim().slice(0, 300) : 'No response body';
+        throw new Error(`HTTP ${response.status}: ${snippet}`);
+    }
+    try {
+        return JSON.parse(text);
+    } catch (err) {
+        const snippet = text ? text.trim().slice(0, 500) : 'Empty response';
+        // The server returned non-JSON (often HTML error page) — include snippet for debugging
+        throw new Error(`Invalid JSON response from ${url}: ${snippet}`);
+    }
+};
 export const login = async (email, password) => {
-    const response = await fetch(`${API_URL}/users.php`, {
+    return fetchJson(`${API_URL}/users.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify({ type: 'login', email, password }),
     });
-    return response.json();
 };
 
 export const register = async (userData) => {
-    const response = await fetch(`${API_URL}/users.php`, {
+    return fetchJson(`${API_URL}/users.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify({ type: 'register', ...userData }),
     });
-    return response.json();
 };
 
 export const getPublicMatches = async () => {
-    const response = await fetch(`${API_URL}/matches.php`);
-    return response.json();
+    return fetchJson(`${API_URL}/matches.php`, { headers: buildHeaders() });
 };
 
 export const getMatchDetails = async (matchId) => {
-    const response = await fetch(`${API_URL}/matches.php?id=${matchId}`);
-    return response.json();
+    return fetchJson(`${API_URL}/matches.php?id=${matchId}`, { headers: buildHeaders() });
 };
 
 export const createMatch = async (matchData) => {
-    const response = await fetch(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify(matchData),
     });
-    return response.json();
 };
 
 export const joinMatch = async (matchId, playerId) => {
-    const response = await fetch(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches.php`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify({ match_id: matchId, player_id: playerId }),
     });
-    return response.json();
 };
-
 export const updatePlayerStats = async (statsData) => {
-    const response = await fetch(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches.php`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify(statsData),
     });
-    return response.json();
 };
 
 export const getUserStats = async (userId) => {
-    const response = await fetch(`${API_URL}/users.php?stats_for_user_id=${userId}`);
-    return response.json();
+    return fetchJson(`${API_URL}/users.php?stats_for_user_id=${userId}`, { headers: buildHeaders() });
+};
+
+export const createPitch = async (pitchData) => {
+    return fetchJson(`${API_URL}/pitches.php`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify(pitchData),
+    });
+};
+
+export const getPitches = async () => {
+    return fetchJson(`${API_URL}/pitches.php`, { headers: buildHeaders() });
 };
