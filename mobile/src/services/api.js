@@ -1,4 +1,4 @@
-const API_URL = 'http://10.70.155.141/api/v1';
+const API_URL = 'http://192.168.1.149/api/v1';
 
 let AUTH_TOKEN = null;
 

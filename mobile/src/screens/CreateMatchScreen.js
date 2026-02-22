@@ -1,21 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Button from '../components/Button';
 import { globalStyles } from '../utils/styles';
 import { createMatch } from '../services/api';
 import DatePicker from 'react-native-date-picker';
+import { useAuth } from '../context/AuthContext';
+import PitchPickerModal from '../components/PitchPickerModal';
 
-const CreateMatchScreen = ({ navigation }) => {
-    const [pitchId, setPitchId] = useState('');
+const CreateMatchScreen = ({ navigation, route }) => {
+    const { user } = useAuth();
+    const [pitchId, setPitchId] = useState(route?.params?.pitchId || '');
+    const [pitchName, setPitchName] = useState('');
     const [matchType, setMatchType] = useState('public');
     const [matchSize, setMatchSize] = useState('5v5');
     const [duration, setDuration] = useState('60');
     const [date, setDate] = useState(new Date());
     const [open, setOpen] = useState(false);
+    const [pickerModalVisible, setPickerModalVisible] = useState(false);
+
+    const handleSelectPitch = (pitch) => {
+        setPitchId(String(pitch.id));
+        setPitchName(pitch.name);
+    };
 
     const handleCreateMatch = async () => {
-        if (!pitchId || !date) {
-            Alert.alert('Error', 'Please fill all required fields.');
+        // Input validation
+        if (!pitchId) {
+            Alert.alert('Error', 'Please select a pitch.');
+            return;
+        }
+        if (!matchSize) {
+            Alert.alert('Error', 'Please select match size.');
+            return;
+        }
+        if (!duration || isNaN(duration) || parseInt(duration, 10) <= 0) {
+            Alert.alert('Error', 'Please enter a valid duration in minutes.');
+            return;
+        }
+        if (date < new Date()) {
+            Alert.alert('Error', 'Match date cannot be in the past.');
             return;
         }
 
@@ -25,12 +48,12 @@ const CreateMatchScreen = ({ navigation }) => {
             match_size: matchSize,
             duration: parseInt(duration, 10),
             match_date: date.toISOString().slice(0, 19).replace('T', ' '),
-            organizer_id: 1, // Assuming a logged-in user with ID 1 for now
+            creator_id: user?.id || 1,
         };
 
         try {
             const result = await createMatch(matchData);
-            if (result.success) {
+            if (result.success || result.message === 'Match Created') {
                 Alert.alert('Success', 'Match created successfully!', [
                     { text: 'OK', onPress: () => navigation.goBack() },
                 ]);
@@ -44,11 +67,28 @@ const CreateMatchScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={globalStyles.container}>
+        <ScrollView contentContainerStyle={globalStyles.container}>
             <Text style={globalStyles.title}>Create a Match</Text>
-            {/* TODO: Replace with a picker */}
-            <TextInput style={globalStyles.input} placeholder="Pitch ID" value={pitchId} onChangeText={setPitchId} />
-            <TextInput style={globalStyles.input} placeholder="Match Type (public/private)" value={matchType} onChangeText={setMatchType} />
+            
+            <TouchableOpacity 
+                style={globalStyles.input}
+                onPress={() => setPickerModalVisible(true)}
+            >
+                <Text>{pitchName || 'Select a Pitch'}</Text>
+            </TouchableOpacity>
+            
+            <PitchPickerModal 
+                visible={pickerModalVisible}
+                onClose={() => setPickerModalVisible(false)}
+                onSelectPitch={handleSelectPitch}
+            />
+            
+            <TextInput 
+                style={globalStyles.input} 
+                placeholder="Match Type (public/private)" 
+                value={matchType} 
+                onChangeText={setMatchType} 
+            />
             <TextInput style={globalStyles.input} placeholder="Match Size (5v5, 7v7, etc.)" value={matchSize} onChangeText={setMatchSize} />
             <TextInput style={globalStyles.input} placeholder="Duration (60, 90, 120 min)" value={duration} onChangeText={setDuration} keyboardType="numeric" />
 
@@ -70,7 +110,7 @@ const CreateMatchScreen = ({ navigation }) => {
             />
             
             <Button title="Create Match" onPress={handleCreateMatch} />
-        </View>
+        </ScrollView>
     );
 };
 

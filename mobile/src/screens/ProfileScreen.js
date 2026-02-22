@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import Button from '../components/Button';
 import { globalStyles } from '../utils/styles';
 import { getUserStats } from '../services/api';
@@ -41,20 +41,55 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={globalStyles.container}>
-            <Text style={globalStyles.title}>Your Stats</Text>
-            {userStats ? (
+        <ScrollView contentContainerStyle={globalStyles.container}>
+            <Text style={globalStyles.title}>Your Profile</Text>
+            
+            {user && (
                 <View style={globalStyles.card}>
-                    <Text style={globalStyles.stat}>Matches Played: {userStats.matches_played}</Text>
-                    <Text style={globalStyles.stat}>Total Goals: {userStats.total_goals}</Text>
-                    <Text style={globalStyles.stat}>Total Assists: {userStats.total_assists}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                        Username: {user.username}
+                    </Text>
+                    <Text style={{ fontSize: 14, marginBottom: 12 }}>
+                        Email: {user.email}
+                    </Text>
+                </View>
+            )}
+
+            <Text style={[globalStyles.title, { marginTop: 20, marginBottom: 12, fontSize: 18 }]}>
+                Your Statistics
+            </Text>
+
+            {loading ? (
+                <ActivityIndicator style={{ marginTop: 20 }} size="large" />
+            ) : error ? (
+                <Text style={{ color: 'red', margin: 16, textAlign: 'center' }}>{error}</Text>
+            ) : userStats ? (
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.stat}>
+                        Matches Played: {userStats.matches_played || 0}
+                    </Text>
+                    <Text style={globalStyles.stat}>
+                        Total Goals: {userStats.total_goals || 0}
+                    </Text>
+                    <Text style={globalStyles.stat}>
+                        Total Assists: {userStats.total_assists || 0}
+                    </Text>
                 </View>
             ) : (
-                <Text>Loading stats...</Text>
+                <Text style={{ textAlign: 'center', marginTop: 20 }}>
+                    No statistics available yet
+                </Text>
             )}
-            <Button title="Create Pitch" onPress={() => navigation.navigate('CreatePitch')} />
-            <Button title="Logout" onPress={handleLogout} />
-        </View>
+
+            <Button 
+                title="Create Pitch" 
+                onPress={() => navigation.navigate('CreatePitch')} 
+            />
+            <Button 
+                title="Logout" 
+                onPress={handleLogout} 
+            />
+        </ScrollView>
     );
 };
 

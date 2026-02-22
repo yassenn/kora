@@ -10,6 +10,7 @@ import MatchDetailsScreen from '../screens/MatchDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CreatePitchScreen from '../screens/CreatePitchScreen';
 import PitchesListScreen from '../screens/PitchesListScreen';
+import PitchDetailsScreen from '../screens/PitchDetailsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import { colors } from '../utils/styles';
@@ -28,6 +29,13 @@ const MatchesStack = () => (
 const HomeStack = () => (
     <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeScreen} />
+    </Stack.Navigator>
+);
+
+const PitchesStack = () => (
+    <Stack.Navigator>
+        <Stack.Screen name="PitchesList" component={PitchesListScreen} options={{ title: 'Pitches' }} />
+        <Stack.Screen name="PitchDetails" component={PitchDetailsScreen} options={{ title: 'Pitch Details' }} />
     </Stack.Navigator>
 );
 
@@ -50,7 +58,7 @@ const MainTabs = () => (
     >
         <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Home' }} />
         <Tab.Screen name="Matches" component={MatchesStack} />
-        <Tab.Screen name="Pitches" component={PitchesListScreen} options={{ title: 'Pitches' }} />
+        <Tab.Screen name="Pitches" component={PitchesStack} options={{ title: 'Pitches' }} />
         <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
 );
