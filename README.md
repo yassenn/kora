@@ -1,6 +1,6 @@
-# Kora - Soccer Match Organization App
+# Kora - Football Match Organization App
 
-Kora is a comprehensive soccer match organization mobile application that enables users to discover, create, and join soccer matches, manage pitches, and track player statistics. It features a React Native frontend for iOS/Android and a PHP backend with a MySQL database.
+Kora is a comprehensive football match organization mobile application that enables users to discover, create, and join football matches, manage pitches, and track player statistics. It features a React Native frontend for iOS/Android and a PHP backend with a MySQL database.
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
