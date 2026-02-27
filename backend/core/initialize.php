@@ -2,10 +2,10 @@
 // Load Config
 require_once 'config/database.php';
 
-// Load Models
-require_once 'models/User.php';
-require_once 'models/Pitch.php';
-require_once 'models/Match.php';
+// Load Core Libraries
+require_once 'core/auth.php';
+require_once 'core/response.php';
+
 
 // Autoload Core Libraries
 spl_autoload_register(function($className){

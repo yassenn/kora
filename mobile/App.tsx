@@ -1,8 +1,5 @@
 import React from 'react';
-import { StatusBar, useColorScheme, LogBox } from 'react-native';
-// Suppress deprecation noise for InteractionManager coming from third-party libs
-// (temporary - upgrade navigation / gesture-handler packages to remove this warning)
-LogBox.ignoreLogs(['InteractionManager has been deprecated']);
+import { StatusBar, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';

@@ -6,6 +6,58 @@ class User {
         $this->db = new Database;
     }
 
+    /**
+     * Validate email format
+     */
+    private function validateEmail($email) {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    /**
+     * Validate password strength (minimum 6 characters)
+     */
+    private function validatePassword($password) {
+        return strlen($password) >= 6;
+    }
+
+    /**
+     * Validate username (not empty, alphanumeric + underscore)
+     */
+    private function validateUsername($username) {
+        return !empty($username) && preg_match('/^[a-zA-Z0-9_]+$/', $username) && strlen($username) >= 3;
+    }
+
+    /**
+     * Get validation errors for registration data
+     */
+    public function getRegistrationErrors($data) {
+        $errors = [];
+
+        if (empty($data['username'])) {
+            $errors['username'] = 'Username is required';
+        } elseif (!$this->validateUsername($data['username'])) {
+            $errors['username'] = 'Username must be at least 3 characters and contain only letters, numbers, and underscores';
+        }
+
+        if (empty($data['email'])) {
+            $errors['email'] = 'Email is required';
+        } elseif (!$this->validateEmail($data['email'])) {
+            $errors['email'] = 'Invalid email format';
+        }
+
+        if (empty($data['password'])) {
+            $errors['password'] = 'Password is required';
+        } elseif (!$this->validatePassword($data['password'])) {
+            $errors['password'] = 'Password must be at least 6 characters';
+        }
+
+        if (empty($data['user_type']) || !in_array($data['user_type'], ['player', 'organizer'])) {
+            $errors['user_type'] = 'Invalid user type';
+        }
+
+        return $errors;
+    }
+
     // Get all users
     public function getUsers() {
         $this->db->query('SELECT id, username, email, user_type FROM users');

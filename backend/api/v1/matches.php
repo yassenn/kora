@@ -8,63 +8,79 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH');
 header('Access-Control-Allow-Headers: Access-Control-Allow-Headers,Content-Type,Access-Control-Allow-Methods, Authorization, X-Requested-With');
 
 $match = new Match();
-
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Route based on request method
 switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
-            $match_id = $_GET['id'];
+            $match_id = intval($_GET['id']);
+            if ($match_id <= 0) {
+                ApiResponse::validationError('Invalid match ID');
+            }
             $match_data = $match->getMatchById($match_id);
             if ($match_data) {
                 $match_data->players = $match->getMatchPlayers($match_id);
-                echo json_encode($match_data);
+                ApiResponse::success('Match retrieved', $match_data);
             } else {
-                echo json_encode(['message' => 'Match not found']);
+                ApiResponse::error('Match not found', 404);
             }
         } else {
             $result = $match->getPublicMatches();
-            echo json_encode($result);
+            ApiResponse::success('Matches retrieved', $result);
         }
         break;
 
     case 'POST':
         // Get raw posted data
-        $data = json_decode(file_get_contents("php://input"));
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        // Validate data
+        $errors = $match->getCreationErrors($data);
+        if (!empty($errors)) {
+            ApiResponse::validationError('Match creation validation failed', $errors);
+        }
 
         if ($match->createMatch($data)) {
-            echo json_encode(['message' => 'Match Created']);
+            ApiResponse::success('Match created successfully');
         } else {
-            echo json_encode(['message' => 'Match Not Created']);
+            ApiResponse::error('Match creation failed', 500);
         }
         break;
 
     case 'PUT':
         // Get raw posted data
-        $data = json_decode(file_get_contents("php://input"));
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (empty($data['match_id']) || empty($data['player_id']) || !isset($data['goals']) || !isset($data['assists'])) {
+            ApiResponse::validationError('match_id, player_id, goals, and assists are required');
+        }
 
         if ($match->updatePlayerStats($data)) {
-            echo json_encode(['message' => 'Player stats updated']);
+            ApiResponse::success('Player stats updated successfully');
         } else {
-            echo json_encode(['message' => 'Player stats not updated']);
+            ApiResponse::error('Player stats update failed', 500);
         }
         break;
 
     case 'PATCH':
         // Get raw posted data
-        $data = json_decode(file_get_contents("php://input"));
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (empty($data['match_id']) || empty($data['player_id'])) {
+            ApiResponse::validationError('match_id and player_id are required');
+        }
 
         if ($match->joinMatch($data)) {
-            echo json_encode(['message' => 'Player joined match']);
+            ApiResponse::success('Player joined match successfully');
         } else {
-            echo json_encode(['message' => 'Could not join match']);
+            ApiResponse::error('Could not join match', 500);
         }
         break;
     
     default:
-        header('HTTP/1.0 405 Method Not Allowed');
-        echo json_encode(['message' => 'Method not allowed']);
+        ApiResponse::error('Method not allowed', 405);
         break;
 
 }
+?>

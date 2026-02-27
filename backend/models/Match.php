@@ -6,6 +6,47 @@ class Match {
         $this->db = new Database;
     }
 
+    /**
+     * Validate match creation data
+     */
+    public function getCreationErrors($data) {
+        $errors = [];
+
+        if (empty($data['pitch_id']) || !is_numeric($data['pitch_id']) || intval($data['pitch_id']) <= 0) {
+            $errors['pitch_id'] = 'Valid pitch ID is required';
+        }
+
+        if (empty($data['creator_id']) || !is_numeric($data['creator_id']) || intval($data['creator_id']) <= 0) {
+            $errors['creator_id'] = 'Valid creator ID is required';
+        }
+
+        if (empty($data['match_type']) || !in_array($data['match_type'], ['public', 'private'])) {
+            $errors['match_type'] = 'Match type must be public or private';
+        }
+
+        if (empty($data['match_size'])) {
+            $errors['match_size'] = 'Match size is required';
+        }
+
+        if (empty($data['duration']) || !is_numeric($data['duration']) || intval($data['duration']) <= 0) {
+            $errors['duration'] = 'Duration must be a positive number';
+        }
+
+        if (empty($data['match_date']) || !$this->validateDateTime($data['match_date'])) {
+            $errors['match_date'] = 'Match date must be in valid datetime format (YYYY-MM-DD HH:MM:SS)';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate datetime format
+     */
+    private function validateDateTime($dateTime) {
+        $d = \DateTime::createFromFormat('Y-m-d H:i:s', $dateTime);
+        return $d && $d->format('Y-m-d H:i:s') === $dateTime;
+    }
+
     // Get all matches
     public function getMatches() {
         $this->db->query('SELECT m.*, p.name as pitch_name FROM matches m JOIN pitches p ON m.pitch_id = p.id');

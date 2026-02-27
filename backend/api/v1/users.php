@@ -7,60 +7,77 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: GET, POST');
 header('Access-Control-Allow-Headers: Access-Control-Allow-Headers,Content-Type,Access-Control-Allow-Methods, Authorization, X-Requested-With');
 
-
 $user = new User();
-
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
         if (isset($_GET['stats_for_user_id'])) {
-            $stats = $user->getUserStats($_GET['stats_for_user_id']);
+            $user_id = intval($_GET['stats_for_user_id']);
+            if ($user_id <= 0) {
+                ApiResponse::validationError('Invalid user ID');
+            }
+            $stats = $user->getUserStats($user_id);
             if ($stats) {
-                echo json_encode($stats);
+                ApiResponse::success('User stats retrieved', $stats);
             } else {
-                echo json_encode(['message' => 'Stats not found']);
+                ApiResponse::error('Stats not found', 404);
             }
         } else {
             $result = $user->getUsers();
-            echo json_encode($result);
+            ApiResponse::success('Users retrieved', $result);
         }
         break;
 
     case 'POST':
-        $data = json_decode(file_get_contents("php://input"));
+        $data = json_decode(file_get_contents("php://input"), true);
         
-        if (isset($data->type) && $data->type == 'register') {
+        if (isset($data['type']) && $data['type'] == 'register') {
+            // Validate registration data
+            $errors = $user->getRegistrationErrors($data);
+            if (!empty($errors)) {
+                ApiResponse::validationError('Registration validation failed', $errors);
+            }
+
+            // Check if email already exists
+            if ($user->findUserByEmail($data['email'])) {
+                ApiResponse::error('Email already registered', 409);
+            }
+
             // Register user
-            $hashed_password = password_hash($data->password, PASSWORD_DEFAULT);
+            $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
             $register_data = [
-                'username' => $data->username,
-                'email' => $data->email,
+                'username' => $data['username'],
+                'email' => $data['email'],
                 'password' => $hashed_password,
-                'user_type' => $data->user_type
+                'user_type' => $data['user_type'] ?? 'player'
             ];
 
             if ($user->register($register_data)) {
-                echo json_encode(['message' => 'User registered']);
+                ApiResponse::success('User registered successfully');
             } else {
-                echo json_encode(['message' => 'User not registered']);
+                ApiResponse::error('User registration failed', 500);
             }
-        } elseif (isset($data->type) && $data->type == 'login') {
+        } elseif (isset($data['type']) && $data['type'] == 'login') {
+            // Validate login data
+            if (empty($data['email']) || empty($data['password'])) {
+                ApiResponse::validationError('Email and password are required');
+            }
+
             // Login user
-            $logged_in_user = $user->login($data->email, $data->password);
+            $logged_in_user = $user->login($data['email'], $data['password']);
             if ($logged_in_user) {
-                echo json_encode($logged_in_user);
+                ApiResponse::success('Login successful', $logged_in_user);
             } else {
-                echo json_encode(['message' => 'Login failed']);
+                ApiResponse::error('Invalid email or password', 401);
             }
         } else {
-            echo json_encode(['message' => 'Invalid request type']);
+            ApiResponse::error('Invalid request type', 400);
         }
         break;
     
     default:
-        header('HTTP/1.0 405 Method Not Allowed');
-        echo json_encode(['message' => 'Method not allowed']);
+        ApiResponse::error('Method not allowed', 405);
         break;
 }
 ?>

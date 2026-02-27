@@ -9,36 +9,42 @@ include_once '../../core/initialize.php';
 
 // Instantiate Pitch object
 $pitch = new Pitch();
-
-// Support GET to list pitches
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $result = $pitch->getPitches();
-    echo json_encode($result);
-    exit();
+    ApiResponse::success('Pitches retrieved', $result);
 }
 
 // Get raw posted data for POST
-$data = json_decode(file_get_contents("php://input"));
+$data = json_decode(file_get_contents("php://input"), true);
 
-if(empty($data->name) || empty($data->location) || empty($data->owner_id)) {
-    // Bad request
-    http_response_code(400);
-    echo json_encode(['message' => 'Pitch creation failed. Incomplete data.']);
-    exit();
+// Validate pitch data
+$errors = [];
+if (empty($data['name'])) {
+    $errors['name'] = 'Pitch name is required';
+}
+if (empty($data['location'])) {
+    $errors['location'] = 'Pitch location is required';
+}
+if (empty($data['owner_id']) || !is_numeric($data['owner_id']) || intval($data['owner_id']) <= 0) {
+    $errors['owner_id'] = 'Valid owner ID is required';
+}
+
+if (!empty($errors)) {
+    ApiResponse::validationError('Pitch creation validation failed', $errors);
 }
 
 // Set pitch properties
-$pitch_data['name'] = $data->name;
-$pitch_data['location'] = $data->location;
-$pitch_data['owner_id'] = $data->owner_id;
+$pitch_data['name'] = $data['name'];
+$pitch_data['location'] = $data['location'];
+$pitch_data['owner_id'] = $data['owner_id'];
 $pitch_data['status'] = 'pending'; // Default status
 
 // Create pitch
-if($pitch->addPitch($pitch_data)) {
-    echo json_encode(['success' => true, 'message' => 'Pitch created successfully.']);
+if ($pitch->addPitch($pitch_data)) {
+    ApiResponse::success('Pitch created successfully');
 } else {
-    echo json_encode(['success' => false, 'message' => 'Pitch creation failed.']);
+    ApiResponse::error('Pitch creation failed', 500);
 }
 ?>
