@@ -1,11 +1,30 @@
-import EncryptedStorage from 'react-native-encrypted-storage';
+import { Platform } from 'react-native';
 
 const STORAGE_PREFIX = '@kora:';
+
+// Use web localStorage on web platform, EncryptedStorage on native
+const isWeb = Platform.OS === 'web';
+
+// Lazy load EncryptedStorage only on native platforms
+let EncryptedStorage;
+if (!isWeb) {
+  try {
+    EncryptedStorage = require('react-native-encrypted-storage').default;
+  } catch (e) {
+    console.warn('Failed to load EncryptedStorage', e);
+  }
+}
 
 export const setItem = async (key, value) => {
   try {
     const text = typeof value === 'string' ? value : JSON.stringify(value);
-    await EncryptedStorage.setItem(STORAGE_PREFIX + key, text);
+    const prefixedKey = STORAGE_PREFIX + key;
+    
+    if (isWeb) {
+      localStorage.setItem(prefixedKey, text);
+    } else {
+      await EncryptedStorage.setItem(prefixedKey, text);
+    }
   } catch (err) {
     console.warn('secureStorage.setItem error', err);
     throw err;
@@ -14,7 +33,15 @@ export const setItem = async (key, value) => {
 
 export const getItem = async (key) => {
   try {
-    const text = await EncryptedStorage.getItem(STORAGE_PREFIX + key);
+    const prefixedKey = STORAGE_PREFIX + key;
+    let text;
+    
+    if (isWeb) {
+      text = localStorage.getItem(prefixedKey);
+    } else {
+      text = await EncryptedStorage.getItem(prefixedKey);
+    }
+    
     if (!text) return null;
     try {
       return JSON.parse(text);
@@ -29,7 +56,13 @@ export const getItem = async (key) => {
 
 export const removeItem = async (key) => {
   try {
-    await EncryptedStorage.removeItem(STORAGE_PREFIX + key);
+    const prefixedKey = STORAGE_PREFIX + key;
+    
+    if (isWeb) {
+      localStorage.removeItem(prefixedKey);
+    } else {
+      await EncryptedStorage.removeItem(prefixedKey);
+    }
   } catch (err) {
     console.warn('secureStorage.removeItem error', err);
     throw err;

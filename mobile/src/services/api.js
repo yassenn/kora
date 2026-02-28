@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.1.149/api/v1';
+const API_URL = 'http://192.168.1.145/api/v1';
 
 let AUTH_TOKEN = null;
 
@@ -27,7 +27,7 @@ const fetchJson = async (url, options) => {
     }
 };
 export const login = async (email, password) => {
-    return fetchJson(`${API_URL}/users.php`, {
+    return fetchJson(`${API_URL}/users`, {
         method: 'POST',
         headers: buildHeaders(true),
         body: JSON.stringify({ type: 'login', email, password }),
@@ -35,7 +35,7 @@ export const login = async (email, password) => {
 };
 
 export const register = async (userData) => {
-    return fetchJson(`${API_URL}/users.php`, {
+    return fetchJson(`${API_URL}/users`, {
         method: 'POST',
         headers: buildHeaders(true),
         body: JSON.stringify({ type: 'register', ...userData }),
@@ -43,15 +43,15 @@ export const register = async (userData) => {
 };
 
 export const getPublicMatches = async () => {
-    return fetchJson(`${API_URL}/matches.php`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/matches`, { headers: buildHeaders() });
 };
 
 export const getMatchDetails = async (matchId) => {
-    return fetchJson(`${API_URL}/matches.php?id=${matchId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/matches?id=${matchId}`, { headers: buildHeaders() });
 };
 
 export const createMatch = async (matchData) => {
-    return fetchJson(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches`, {
         method: 'POST',
         headers: buildHeaders(true),
         body: JSON.stringify(matchData),
@@ -59,14 +59,14 @@ export const createMatch = async (matchData) => {
 };
 
 export const joinMatch = async (matchId, playerId) => {
-    return fetchJson(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches`, {
         method: 'PATCH',
         headers: buildHeaders(true),
         body: JSON.stringify({ match_id: matchId, player_id: playerId }),
     });
 };
 export const updatePlayerStats = async (statsData) => {
-    return fetchJson(`${API_URL}/matches.php`, {
+    return fetchJson(`${API_URL}/matches`, {
         method: 'PUT',
         headers: buildHeaders(true),
         body: JSON.stringify(statsData),
@@ -74,11 +74,11 @@ export const updatePlayerStats = async (statsData) => {
 };
 
 export const getUserStats = async (userId) => {
-    return fetchJson(`${API_URL}/users.php?stats_for_user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/users?stats_for_user_id=${userId}`, { headers: buildHeaders() });
 };
 
 export const createPitch = async (pitchData) => {
-    return fetchJson(`${API_URL}/pitches.php`, {
+    return fetchJson(`${API_URL}/pitches`, {
         method: 'POST',
         headers: buildHeaders(true),
         body: JSON.stringify(pitchData),
@@ -86,5 +86,5 @@ export const createPitch = async (pitchData) => {
 };
 
 export const getPitches = async () => {
-    return fetchJson(`${API_URL}/pitches.php`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/pitches`, { headers: buildHeaders() });
 };
