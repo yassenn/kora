@@ -162,22 +162,22 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                 <View style={globalStyles.card}>
                     <View style={[globalStyles.row, globalStyles.justifyBetween, { marginBottom: 16 }]}>
                         <Text style={styles.subtitle}>Players ({match.players?.length || 0})</Text>
-                        <View style={globalStyles.row}>
+                    </View>
+                    <View style={[globalStyles.row, globalStyles.alignCenter, { marginBottom: 16, gap: 12 }]}>
+                        <TouchableOpacity 
+                            style={styles.shareButton} 
+                            onPress={handleShare}
+                        >
+                            <Text style={styles.inviteButtonText}>🔗 Share</Text>
+                        </TouchableOpacity>
+                        {isOrganizer && (
                             <TouchableOpacity 
-                                style={styles.shareIconButton} 
-                                onPress={handleShare}
+                                style={styles.inviteButton} 
+                                onPress={() => setInviteModalVisible(true)}
                             >
-                                <Text style={styles.iconText}>🔗</Text>
+                                <Text style={styles.inviteButtonText}>+ Invite</Text>
                             </TouchableOpacity>
-                            {isOrganizer && (
-                                <TouchableOpacity 
-                                    style={styles.inviteButton} 
-                                    onPress={() => setInviteModalVisible(true)}
-                                >
-                                    <Text style={styles.inviteButtonText}>+ Invite</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        )}
                     </View>
                     {match.players && match.players.length > 0 ? (
                         [...match.players]
@@ -316,29 +316,27 @@ const styles = StyleSheet.create({
     },
     inviteButton: {
         backgroundColor: colors.primary + '15',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
+        paddingVertical: 10,
+        borderRadius: 10,
+        flex: 1,
+        maxWidth: 250,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     inviteButtonText: {
         color: colors.primary,
         fontWeight: '700',
         fontSize: 14,
     },
-    shareIconButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.background,
-        justifyContent: 'center',
+    shareButton: {
+        backgroundColor: colors.primary + '15',
+        paddingVertical: 10,
+        borderRadius: 10,
+        flex: 1,
+        maxWidth: 250,
         alignItems: 'center',
-        marginRight: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)',
+        justifyContent: 'center',
     },
-    iconText: {
-        fontSize: 18,
-    }
 });
 
 export default MatchDetailsScreen;

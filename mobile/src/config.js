@@ -1,3 +1,3 @@
 export const CONFIG = {
-    API_URL: 'http://192.168.1.154/api/v1',
+    API_URL: 'http://localhost:8000/api/v1',
 };

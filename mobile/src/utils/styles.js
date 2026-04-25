@@ -102,4 +102,20 @@ export const globalStyles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24, // Ensure centered content doesn't hit edges
   },
+  row: {
+    flexDirection: 'row',
+  },
+  justifyBetween: {
+    justifyContent: 'space-between',
+  },
+  alignCenter: {
+    alignItems: 'center',
+  },
+  justifyCenter: {
+    justifyContent: 'center',
+  },
+  caption: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 });
