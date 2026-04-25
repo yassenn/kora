@@ -1,5 +1,5 @@
 <?php
-class Match {
+class SoccerMatch {
     private $db;
 
     public function __construct() {
@@ -68,14 +68,14 @@ class Match {
 
     // Get players for a given match
     public function getMatchPlayers($match_id) {
-        $this->db->query('SELECT u.id, u.username FROM users u JOIN match_players mp ON u.id = mp.player_id WHERE mp.match_id = :match_id');
+        $this->db->query('SELECT u.id, u.username, u.profile_picture_url FROM users u JOIN match_players mp ON u.id = mp.player_id WHERE mp.match_id = :match_id');
         $this->db->bind(':match_id', $match_id);
         return $this->db->resultSet();
     }
 
     // Create a new match
     public function createMatch($data) {
-        $this->db->query('INSERT INTO matches (pitch_id, creator_id, match_type, match_size, duration, match_date, status) VALUES (:pitch_id, :creator_id, :match_type, :match_size, :duration, :match_date, :status)');
+        $this->db->query('INSERT INTO matches (pitch_id, creator_id, match_type, match_size, duration, match_date) VALUES (:pitch_id, :creator_id, :match_type, :match_size, :duration, :match_date)');
         // Bind values
         $this->db->bind(':pitch_id', $data['pitch_id']);
         $this->db->bind(':creator_id', $data['creator_id']);
@@ -83,10 +83,17 @@ class Match {
         $this->db->bind(':match_size', $data['match_size']);
         $this->db->bind(':duration', $data['duration']);
         $this->db->bind(':match_date', $data['match_date']);
-        $this->db->bind(':status', 'scheduled');
 
         // Execute
         if ($this->db->execute()) {
+            $match_id = $this->db->lastInsertId();
+
+            // Automatically add creator as the first player
+            $this->db->query('INSERT INTO match_players (match_id, player_id) VALUES (:match_id, :player_id)');
+            $this->db->bind(':match_id', $match_id);
+            $this->db->bind(':player_id', $data['creator_id']);
+            $this->db->execute();
+
             return true;
         } else {
             return false;
@@ -101,6 +108,19 @@ class Match {
         $this->db->bind(':player_id', $data['player_id']);
 
         // Execute
+        if ($this->db->execute()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Leave a match
+    public function leaveMatch($match_id, $player_id) {
+        $this->db->query('DELETE FROM match_players WHERE match_id = :match_id AND player_id = :player_id');
+        $this->db->bind(':match_id', $match_id);
+        $this->db->bind(':player_id', $player_id);
+
         if ($this->db->execute()) {
             return true;
         } else {
@@ -123,6 +143,59 @@ class Match {
         } else {
             return false;
         }
+    }
+
+    // Get upcoming matches for a specific user
+    public function getUserUpcomingMatches($user_id) {
+        $this->db->query("SELECT DISTINCT m.*, p.name as pitch_name 
+                          FROM matches m 
+                          JOIN pitches p ON m.pitch_id = p.id 
+                          LEFT JOIN match_players mp ON m.id = mp.match_id 
+                          WHERE (m.creator_id = :user_id OR mp.player_id = :user_id) 
+                          AND m.match_date >= NOW() 
+                          AND m.status = 'scheduled'
+                          ORDER BY m.match_date ASC");
+        $this->db->bind(':user_id', $user_id);
+        return $this->db->resultSet();
+    }
+
+    // Get occupied slots for a pitch on a specific date
+    public function getOccupiedSlots($pitch_id, $date) {
+        $this->db->query("SELECT match_date, duration FROM matches 
+                          WHERE pitch_id = :pitch_id 
+                          AND DATE(match_date) = :date 
+                          AND status = 'scheduled'");
+        $this->db->bind(':pitch_id', $pitch_id);
+        $this->db->bind(':date', $date);
+        return $this->db->resultSet();
+    }
+
+    // Update a match
+    public function updateMatch($id, $data) {
+        $this->db->query('UPDATE matches SET pitch_id = :pitch_id, match_type = :match_type, match_size = :match_size, duration = :duration, match_date = :match_date, status = :status WHERE id = :id');
+        $this->db->bind(':id', $id);
+        $this->db->bind(':pitch_id', $data['pitch_id']);
+        $this->db->bind(':match_type', $data['match_type']);
+        $this->db->bind(':match_size', $data['match_size']);
+        $this->db->bind(':duration', $data['duration']);
+        $this->db->bind(':match_date', $data['match_date']);
+        $this->db->bind(':status', $data['status'] ?? 'scheduled');
+
+        return $this->db->execute();
+    }
+
+    // Delete a match
+    public function deleteMatch($id) {
+        // match_players will be deleted by ON DELETE CASCADE if set up, 
+        // but let's be explicit if not sure. (kickoff_db.sql didn't have cascade for matches initially)
+        // Wait, kickoff_db.sql has CASCADE for match_invitations and others but NOT match_players.
+        $this->db->query('DELETE FROM match_players WHERE match_id = :id');
+        $this->db->bind(':id', $id);
+        $this->db->execute();
+
+        $this->db->query('DELETE FROM matches WHERE id = :id');
+        $this->db->bind(':id', $id);
+        return $this->db->execute();
     }
 }
 ?>

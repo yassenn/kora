@@ -1,15 +1,24 @@
 import React from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
-import { globalStyles } from '../utils/styles';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { globalStyles, colors } from '../utils/styles';
 
-const Button = ({ title, onPress, disabled = false }) => {
+const Button = ({ title, onPress, disabled = false, variant = 'primary', style }) => {
+    const isPrimary = variant === 'primary';
+    
     return (
         <TouchableOpacity 
-            style={[globalStyles.button, disabled && { opacity: 0.6 }]} 
+            style={[
+                isPrimary ? globalStyles.button : globalStyles.buttonSecondary, 
+                disabled && { opacity: 0.5 },
+                style
+            ]} 
             onPress={onPress}
             disabled={disabled}
+            activeOpacity={0.7}
         >
-            <Text style={globalStyles.buttonText}>{title}</Text>
+            <Text style={isPrimary ? globalStyles.buttonText : globalStyles.buttonTextSecondary}>
+                {title}
+            </Text>
         </TouchableOpacity>
     );
 };

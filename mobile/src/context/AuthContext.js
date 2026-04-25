@@ -42,16 +42,25 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     // call API login helper and store result
     const res = await apiLogin(email, password);
-    if (res && res.id) {
-      setUser(res);
-      // backend currently returns user object; if it returned a token include it
-      const t = res.token || null;
+    
+    // Support both raw response (res.id) and structured response (res.success && res.data)
+    const userData = res.success ? res.data : (res.id ? res : null);
+
+    if (userData && (userData.id || userData.user?.id)) {
+      const userObj = userData.user || userData;
+      setUser(userObj);
+      const t = userData.token || null;
       setToken(t);
       if (t) setAuthToken(t);
-      await persist(res, t);
-      return res;
+      await persist(userObj, t);
+      return userObj;
     }
-    throw new Error(res?.message || 'Login failed');
+    throw new Error(res?.message || 'Invalid email or password');
+  };
+
+  const updateUser = async (updatedUser) => {
+    setUser(updatedUser);
+    await persist(updatedUser, token);
   };
 
   const logout = async () => {
@@ -65,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, setUser, setToken }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, setUser, setToken, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

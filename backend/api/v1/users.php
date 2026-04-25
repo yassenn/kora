@@ -47,7 +47,12 @@ switch ($method) {
 
             // Check if email already exists
             if ($user->findUserByEmail($data['email'])) {
-                ApiResponse::error('Email already registered', 409);
+                ApiResponse::error('This email is already registered', 409);
+            }
+
+            // Check if username already exists
+            if ($user->findUserByUsername($data['username'])) {
+                ApiResponse::error('This username is already taken', 409);
             }
 
             // Register user
@@ -60,9 +65,9 @@ switch ($method) {
             ];
 
             if ($user->register($register_data)) {
-                ApiResponse::success('User registered successfully');
+                ApiResponse::success('Account created successfully! You can now login.');
             } else {
-                ApiResponse::error('User registration failed', 500);
+                ApiResponse::error('Registration failed. Please try again later.', 500);
             }
         } elseif (isset($data['type']) && $data['type'] == 'login') {
             // Validate login data
@@ -79,6 +84,19 @@ switch ($method) {
             }
         } else {
             ApiResponse::error('Invalid request type', 400);
+        }
+        break;
+    
+    case 'PUT':
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (empty($data['id']) || empty($data['user_type'])) {
+            ApiResponse::error('User ID and type are required', 400);
+        }
+        
+        if ($user->updateUserType($data['id'], $data['user_type'])) {
+            ApiResponse::success('User role updated successfully');
+        } else {
+            ApiResponse::error('Failed to update role', 500);
         }
         break;
     

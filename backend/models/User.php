@@ -51,7 +51,7 @@ class User {
             $errors['password'] = 'Password must be at least 6 characters';
         }
 
-        if (empty($data['user_type']) || !in_array($data['user_type'], ['player', 'organizer'])) {
+        if (empty($data['user_type']) || !in_array($data['user_type'], ['player', 'organizer', 'pitch_owner', 'admin'])) {
             $errors['user_type'] = 'Invalid user type';
         }
 
@@ -96,6 +96,21 @@ class User {
         }
     }
 
+    // Find user by username
+    public function findUserByUsername($username) {
+        $this->db->query('SELECT * FROM users WHERE username = :username');
+        $this->db->bind(':username', $username);
+
+        $row = $this->db->single();
+
+        // Check row
+        if ($this->db->rowCount() > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     // Login User
     public function login($email, $password) {
         $this->db->query('SELECT * FROM users WHERE email = :email');
@@ -124,6 +139,20 @@ class User {
         $row = $this->db->single();
         
         return $row;
+    }
+
+    // Update User Role
+    public function updateUserType($id, $type) {
+        $this->db->query('UPDATE users SET user_type = :type WHERE id = :id');
+        $this->db->bind(':id', $id);
+        $this->db->bind(':type', $type);
+        return $this->db->execute();
+    }
+
+    // Get all admins
+    public function getAdmins() {
+        $this->db->query("SELECT id FROM users WHERE user_type = 'admin'");
+        return $this->db->resultSet();
     }
 }
 ?>

@@ -1,0 +1,17 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Rounded Square with Kora Primary Blue -->
+  <rect width="1024" height="1024" rx="220" fill="#007AFF"/>
+  
+  <!-- Stylized Soccer Ball -->
+  <circle cx="512" cy="512" r="320" stroke="white" stroke-width="40"/>
+  
+  <!-- Soccer Ball Patterns (Hexagons) -->
+  <path d="M512 192L620 270V395L512 473L404 395V270L512 192Z" fill="white"/>
+  <path d="M235 422L343 500V625L235 703L127 625V500L235 422Z" fill="white" opacity="0.6"/>
+  <path d="M789 422L897 500V625L789 703L681 625V500L789 422Z" fill="white" opacity="0.6"/>
+  <path d="M343 754L451 832V957L343 1035L235 957V832L343 754Z" fill="white" opacity="0.4"/>
+  <path d="M681 754L789 832V957L681 1035L573 957V832L681 754Z" fill="white" opacity="0.4"/>
+
+  <!-- Stylized "K" overlay on the ball -->
+  <path d="M420 350V674M420 512L580 350M420 512L580 674" stroke="white" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
