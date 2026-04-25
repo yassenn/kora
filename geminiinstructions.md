@@ -15,6 +15,8 @@
 - [x] Identify the main features and their current implementation status.
     - [x] Database schema is complete (`kickoff_db.sql`).
     - [x] Many mobile screens are implemented, but some (like `HomeScreen.js`) are minimal.
+- [x] Security: Fixed 16 vulnerabilities (Critical/High/Moderate) in mobile dependencies using `overrides`.
+- [x] Source Control: Configured SSH authentication for GitHub and pushed all pending changes.
 - [ ] Pending Tasks:
     - [x] Backend: Fix `pitches.php` endpoint logic and error handling.
     - [x] Backend: Implement "Leave Match" functionality.

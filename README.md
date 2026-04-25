@@ -554,3 +554,8 @@ See `kickoff_db.sql` for complete schema and relationships.
 - **API validation errors**: Check response format is `{ success: false, message: string, data: {errors} }` when validation fails
 *   **Comprehensive Testing:** Develop thorough unit, integration, and end-to-end tests for both the mobile and backend components.
 *   **Deployment Automation:** Set up CI/CD pipelines for automated testing and deployment of both the mobile application and the backend.
+
+## Recent Updates (2026-04-25)
+- Fixed all security vulnerabilities in the mobile application.
+- Fully synchronized the project with GitHub via SSH.
+- Added new API endpoints and mobile screens for Invitations, Notifications, and Reviews.
