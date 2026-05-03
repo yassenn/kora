@@ -1,41 +1,62 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { globalStyles, colors } from '../utils/styles';
 import { useAuth } from '../context/AuthContext';
-import { getUserStats, getUpcomingMatches, getRecentPitches } from '../services/api';
+import { getUserStats, getUpcomingMatches, getRecentPitches, getNotifications } from '../services/api';
 
 const HomeScreen = ({ navigation }) => {
     const { user } = useAuth();
     const [stats, setStats] = useState(null);
     const [upcomingMatches, setUpcomingMatches] = useState([]);
     const [recentPitches, setRecentPitches] = useState([]);
+    const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchData = useCallback(async () => {
         if (!user) return;
         try {
-            const [statsRes, matchesRes, pitchesRes] = await Promise.all([
+            console.log('[HomeScreen] Fetching data for user:', user.id);
+            const results = await Promise.allSettled([
                 getUserStats(user.id),
                 getUpcomingMatches(user.id),
-                getRecentPitches(3)
+                getRecentPitches(3),
+                getNotifications(user.id)
             ]);
+
+            const [statsRes, matchesRes, pitchesRes, notificationsRes] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
             if (statsRes && statsRes.success) setStats(statsRes.data);
             if (matchesRes && matchesRes.success) setUpcomingMatches(matchesRes.data || []);
             if (pitchesRes && pitchesRes.success) setRecentPitches(pitchesRes.data || []);
+            
+            if (notificationsRes && notificationsRes.success && Array.isArray(notificationsRes.data)) {
+                const unread = notificationsRes.data.some(n => !n.is_read || n.is_read == 0 || n.is_read === '0');
+                setHasUnreadNotifications(unread);
+            }
+
+            // Log failures if any
+            results.forEach((r, i) => {
+                if (r.status === 'rejected') {
+                    console.error(`[HomeScreen] API call ${i} failed:`, r.reason);
+                }
+            });
+
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
+            console.error('[HomeScreen] Unexpected error in fetchData:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     }, [user]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [fetchData])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -69,7 +90,7 @@ const HomeScreen = ({ navigation }) => {
                                 style={styles.iconButton} 
                                 onPress={() => navigation.navigate('Notifications')}
                             >
-                                <View style={styles.badgeCount} />
+                                {hasUnreadNotifications && <View style={styles.badgeCount} />}
                                 <Text style={styles.iconText}>🔔</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
@@ -102,7 +123,7 @@ const HomeScreen = ({ navigation }) => {
 
                     {/* Upcoming Matches */}
                     <View style={[globalStyles.row, globalStyles.justifyBetween, { marginBottom: 16 }]}>
-                        <Text style={globalStyles.subtitle}>Next Games</Text>
+                        <Text style={globalStyles.subtitle}>My Upcoming Games</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Matches')}>
                             <Text style={styles.seeAll}>View All</Text>
                         </TouchableOpacity>

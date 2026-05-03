@@ -49,19 +49,19 @@ class SoccerMatch {
 
     // Get all matches
     public function getMatches() {
-        $this->db->query('SELECT m.*, p.name as pitch_name FROM matches m JOIN pitches p ON m.pitch_id = p.id');
+        $this->db->query("SELECT m.*, p.name as pitch_name, (SELECT COUNT(*) FROM match_players mp WHERE mp.match_id = m.id) as player_count, (SELECT GROUP_CONCAT(CONCAT(player_id, ':', goals)) FROM match_players mp WHERE mp.match_id = m.id) as player_stats FROM matches m JOIN pitches p ON m.pitch_id = p.id WHERE m.match_date >= NOW() ORDER BY m.match_date ASC");
         return $this->db->resultSet();
     }
     
     // Get all public matches
     public function getPublicMatches() {
-        $this->db->query("SELECT m.*, p.name as pitch_name FROM matches m JOIN pitches p ON m.pitch_id = p.id WHERE m.match_type = 'public' AND m.status = 'scheduled'");
+        $this->db->query("SELECT m.*, p.name as pitch_name, (SELECT COUNT(*) FROM match_players mp WHERE mp.match_id = m.id) as player_count, (SELECT GROUP_CONCAT(CONCAT(player_id, ':', goals)) FROM match_players mp WHERE mp.match_id = m.id) as player_stats FROM matches m JOIN pitches p ON m.pitch_id = p.id WHERE m.match_type = 'public' AND m.status = 'scheduled' AND m.match_date >= NOW() ORDER BY m.match_date ASC");
         return $this->db->resultSet();
     }
 
     // Get match by ID
     public function getMatchById($id) {
-        $this->db->query('SELECT m.*, p.name as pitch_name FROM matches m JOIN pitches p ON m.pitch_id = p.id WHERE m.id = :id');
+        $this->db->query("SELECT m.*, p.name as pitch_name, (SELECT COUNT(*) FROM match_players mp WHERE mp.match_id = m.id) as player_count, (SELECT GROUP_CONCAT(CONCAT(player_id, ':', goals)) FROM match_players mp WHERE mp.match_id = m.id) as player_stats FROM matches m JOIN pitches p ON m.pitch_id = p.id WHERE m.id = :id");
         $this->db->bind(':id', $id);
         return $this->db->single();
     }
@@ -85,6 +85,7 @@ class SoccerMatch {
         $this->db->bind(':match_date', $data['match_date']);
 
         // Execute
+        error_log("Match data: " . json_encode($data));
         if ($this->db->execute()) {
             $match_id = $this->db->lastInsertId();
 
@@ -108,6 +109,7 @@ class SoccerMatch {
         $this->db->bind(':player_id', $data['player_id']);
 
         // Execute
+        error_log("Match data: " . json_encode($data));
         if ($this->db->execute()) {
             return true;
         } else {
@@ -121,6 +123,7 @@ class SoccerMatch {
         $this->db->bind(':match_id', $match_id);
         $this->db->bind(':player_id', $player_id);
 
+        error_log("Match data: " . json_encode($data));
         if ($this->db->execute()) {
             return true;
         } else {
@@ -138,6 +141,7 @@ class SoccerMatch {
         $this->db->bind(':assists', $data['assists']);
 
         // Execute
+        error_log("Match data: " . json_encode($data));
         if ($this->db->execute()) {
             return true;
         } else {

@@ -4,26 +4,37 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import PlayerPickerModal from '../components/PlayerPickerModal';
 import { globalStyles, colors } from '../utils/styles';
-import { getMatchDetails, joinMatch, leaveMatch, sendInvitation } from '../services/api';
+import { getMatchDetails, joinMatch, leaveMatch, sendInvitation, getMatchInvitations } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useFeedback } from '../context/FeedbackContext';
 
 const MatchDetailsScreen = ({ route, navigation }) => {
     const matchId = route.params?.id || route.params?.matchId;
     const [match, setMatch] = useState(null);
+    const [invitedIds, setInvitedIds] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [inviteModalVisible, setInviteModalVisible] = useState(false);
     const { user } = useAuth();
+    const { showFeedback } = useFeedback();
 
     const fetchDetails = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await getMatchDetails(matchId);
-            if (res && res.success) {
-                setMatch(res.data);
+            const [matchRes, inviteRes] = await Promise.all([
+                getMatchDetails(matchId),
+                getMatchInvitations(matchId)
+            ]);
+
+            if (matchRes && matchRes.success) {
+                setMatch(matchRes.data);
             } else {
-                setError(res?.message || 'Match not found');
+                setError(matchRes?.message || 'Match not found');
+            }
+
+            if (inviteRes && inviteRes.success) {
+                setInvitedIds(inviteRes.data.map(i => i.invitee_id));
             }
         } catch (err) {
             setError(err.message || 'Network error');
@@ -47,30 +58,30 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                 invitee_id: inviteeId
             });
             if (res && res.success) {
-                Alert.alert('Success', 'Invitation sent!');
+                showFeedback('Success', 'Invitation sent!', 'success');
+                setInvitedIds(prev => [...prev, inviteeId]);
             } else {
-                Alert.alert('Error', res?.message || 'Could not send invitation');
+                showFeedback('Error', res?.message || 'Could not send invitation', 'error');
             }
         } catch (err) {
-            Alert.alert('Error', err.message || 'Could not send invitation');
+            showFeedback('Error', err.message || 'Could not send invitation', 'error');
         }
     };
 
     const handleJoinMatch = async () => {
         if (!user?.id) {
-            Alert.alert('Login required', 'Please login to join matches');
+            showFeedback('Login required', 'Please login to join matches', 'warning');
             return;
         }
         try {
             const res = await joinMatch(matchId, user.id);
             if (res && res.success) {
-                Alert.alert('Success', 'You joined the match');
-                fetchDetails();
+                showFeedback('Success', 'You joined the match', 'success', () => fetchDetails());
             } else {
-                Alert.alert('Error', res?.message || 'Could not join match');
+                showFeedback('Error', res?.message || 'Could not join match', 'error');
             }
         } catch (err) {
-            Alert.alert('Error', err.message || 'Could not join match');
+            showFeedback('Error', err.message || 'Could not join match', 'error');
         }
     };
 
@@ -87,13 +98,12 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                         try {
                             const res = await leaveMatch(matchId, user.id);
                             if (res && res.success) {
-                                Alert.alert('Success', 'You left the match');
-                                fetchDetails();
+                                showFeedback('Success', 'You left the match', 'success', () => fetchDetails());
                             } else {
-                                Alert.alert('Error', res?.message || 'Could not leave match');
+                                showFeedback('Error', res?.message || 'Could not leave match', 'error');
                             }
                         } catch (err) {
-                            Alert.alert('Error', err.message || 'Could not leave match');
+                            showFeedback('Error', err.message || 'Could not leave match', 'error');
                         }
                     }
                 }
@@ -182,8 +192,8 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                     {match.players && match.players.length > 0 ? (
                         [...match.players]
                             .sort((a, b) => a.id === match.creator_id ? -1 : b.id === match.creator_id ? 1 : 0)
-                            .map((item) => (
-                            <View key={item.id.toString()} style={styles.playerItem}>
+                            .map((item, index) => (
+                            <View key={item.id.toString()} style={[styles.playerItem, index === match.players.length - 1 && { borderBottomWidth: 0 }]}>
                                 <View style={styles.avatarSmall}>
                                     {item.profile_picture_url ? (
                                         <Image source={{ uri: item.profile_picture_url }} style={styles.avatarImage} />
@@ -216,7 +226,7 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                         <Button 
                             title="Leave Match" 
                             onPress={handleLeaveMatch} 
-                            style={{ backgroundColor: colors.danger }} 
+                            style={{ backgroundColor: colors.danger, shadowOpacity: 0, elevation: 0 }} 
                         />
                     ) : (
                         <Button 
@@ -230,7 +240,7 @@ const MatchDetailsScreen = ({ route, navigation }) => {
                 visible={inviteModalVisible}
                 onClose={() => setInviteModalVisible(false)}
                 onInvitePlayer={handleInvitePlayer}
-                alreadyInvitedIds={match.players?.map(p => p.id)}
+                alreadyInvitedIds={[...(match.players?.map(p => p.id) || []), ...invitedIds]}
             />
         </SafeAreaView>
     );

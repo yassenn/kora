@@ -46,12 +46,14 @@ const PlayerPickerModal = ({ visible, onClose, onInvitePlayer, alreadyInvitedIds
         
         return (
             <View style={styles.itemCard}>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{item.username}</Text>
-                    <Text style={globalStyles.caption}>{item.email}</Text>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={styles.userName} numberOfLines={1}>{item.username}</Text>
+                    <Text style={globalStyles.caption} numberOfLines={1}>{item.email}</Text>
                 </View>
                 {isInvited ? (
-                    <Text style={styles.invitedText}>Already Invited</Text>
+                    <View style={[styles.inviteButton, { backgroundColor: colors.lightGray }]}>
+                        <Text style={styles.invitedText}>Invited</Text>
+                    </View>
                 ) : (
                     <TouchableOpacity 
                         style={styles.inviteButton}
@@ -164,9 +166,11 @@ const styles = StyleSheet.create({
     },
     inviteButton: {
         backgroundColor: colors.primary,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        width: 80,
+        height: 36,
         borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     inviteButtonText: {
         color: '#fff',
@@ -176,7 +180,7 @@ const styles = StyleSheet.create({
     invitedText: {
         color: colors.textSecondary,
         fontSize: 14,
-        fontStyle: 'italic',
+        fontWeight: '700',
     },
     closeIcon: {
         fontSize: 20,

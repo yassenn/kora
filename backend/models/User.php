@@ -113,6 +113,7 @@ class User {
 
     // Login User
     public function login($email, $password) {
+        $email = trim(strtolower($email));
         $this->db->query('SELECT * FROM users WHERE email = :email');
         $this->db->bind(':email', $email);
 

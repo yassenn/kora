@@ -14,10 +14,16 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        $user_id = $_GET['user_id'] ?? null;
-        if (!$user_id) ApiResponse::error('user_id is required');
-        $result = $invitation->getUserInvitations($user_id);
-        ApiResponse::success('Invitations retrieved', $result);
+        if (isset($_GET['match_id'])) {
+            $match_id = $_GET['match_id'];
+            $result = $invitation->getMatchInvitations($match_id);
+            ApiResponse::success('Match invitations retrieved', $result);
+        } else {
+            $user_id = $_GET['user_id'] ?? null;
+            if (!$user_id) ApiResponse::error('user_id or match_id is required');
+            $result = $invitation->getUserInvitations($user_id);
+            ApiResponse::success('Invitations retrieved', $result);
+        }
         break;
 
     case 'POST':

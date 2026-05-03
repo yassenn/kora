@@ -2,22 +2,84 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { globalStyles, colors } from '../utils/styles';
-import { getPitches, updatePitchStatus } from '../services/api';
+import { getPitches, updatePitchStatus, getPublicMatches, getUsers } from '../services/api';
 import Button from '../components/Button';
 
 const AdminPitchesScreen = () => {
     const [pitches, setPitches] = useState([]);
+    const [matches, setMatches] = useState([]);
+    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [adminStats, setAdminStats] = useState(null);
+    const [showStats, setShowStats] = useState(true);
+    const [showApprovals, setShowApprovals] = useState(true);
 
-    const fetchPitches = useCallback(async () => {
+    const calculateStats = (allPitches, allMatches, allUsers) => {
+        if (!Array.isArray(allPitches) || !Array.isArray(allMatches) || !Array.isArray(allUsers)) {
+            console.warn('[AdminStats] Missing data for calculation');
+            return;
+        }
+
+        const stats = {
+            totalMatches: allMatches.length,
+            totalPitches: allPitches.length,
+            totalOwners: allUsers.filter(u => u && u.user_type === 'pitch_owner').length,
+            totalPlayers: allUsers.filter(u => u && u.user_type === 'player').length,
+            totalRevenue: 0,
+            totalFees: 0,
+            pitchStats: []
+        };
+
+        allPitches.forEach(pitch => {
+            if (!pitch) return;
+            const pitchMatches = allMatches.filter(m => m && m.pitch_id === pitch.id);
+            const pricePerHour = parseFloat(pitch.price_per_hour) || 0;
+            
+            let pitchRevenue = 0;
+            let pitchFees = 0;
+
+            pitchMatches.forEach(match => {
+                const duration = parseInt(match.duration) || 60;
+                const matchRevenue = (pricePerHour / 60) * duration;
+                pitchRevenue += matchRevenue;
+                // Fee is 10% if revenue is 5€ or more
+                if (matchRevenue >= 5) {
+                    pitchFees += matchRevenue * 0.1;
+                }
+            });
+
+            stats.totalRevenue += pitchRevenue;
+            stats.totalFees += pitchFees;
+            stats.pitchStats.push({
+                id: pitch.id,
+                name: pitch.name || 'Unknown Pitch',
+                revenue: pitchRevenue,
+                fees: pitchFees,
+                matchCount: pitchMatches.length
+            });
+        });
+
+        setAdminStats(stats);
+    };
+
+    const fetchData = useCallback(async () => {
         try {
-            const res = await getPitches();
-            if (res && res.success) {
-                setPitches(res.data);
+            const [pitchesRes, matchesRes, usersRes] = await Promise.all([
+                getPitches(),
+                getPublicMatches(),
+                getUsers()
+            ]);
+
+            if (pitchesRes?.success) setPitches(pitchesRes.data);
+            if (matchesRes?.success) setMatches(matchesRes.data);
+            if (usersRes?.success) setUsers(usersRes.data);
+
+            if (pitchesRes?.success && matchesRes?.success && usersRes?.success) {
+                calculateStats(pitchesRes.data, matchesRes.data, usersRes.data);
             }
         } catch (err) {
-            console.error('Failed to fetch pitches:', err);
+            console.error('Failed to fetch admin data:', err);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -25,15 +87,15 @@ const AdminPitchesScreen = () => {
     }, []);
 
     useEffect(() => {
-        fetchPitches();
-    }, [fetchPitches]);
+        fetchData();
+    }, [fetchData]);
 
     const handleUpdateStatus = async (id, status) => {
         try {
             const res = await updatePitchStatus(id, status);
             if (res && res.success) {
                 Alert.alert('Success', `Pitch ${status} successfully`);
-                fetchPitches();
+                fetchData();
             } else {
                 Alert.alert('Error', res?.message || 'Action failed');
             }
@@ -44,7 +106,73 @@ const AdminPitchesScreen = () => {
 
     const onRefresh = () => {
         setRefreshing(true);
-        fetchPitches();
+        fetchData();
+    };
+
+    const renderStatsHeader = () => {
+        if (!adminStats) return null;
+
+        return (
+            <View style={styles.statsContainer}>
+                <View style={[globalStyles.row, globalStyles.justifyBetween, globalStyles.alignCenter, { marginBottom: 12 }]}>
+                    <Text style={styles.sectionTitle}>Application Dashboard</Text>
+                    <TouchableOpacity onPress={() => setShowStats(!showStats)}>
+                        <Text style={{ fontSize: 12, color: colors.primary, padding: 5 }}>{showStats ? 'Hide' : 'Show'}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {showStats && (
+                    <>
+                        <View style={styles.statsGrid}>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statNumber}>{adminStats.totalMatches}</Text>
+                                <Text style={styles.statLabel}>Matches</Text>
+                            </View>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statNumber}>{adminStats.totalPitches}</Text>
+                                <Text style={styles.statLabel}>Pitches</Text>
+                            </View>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statNumber}>{adminStats.totalOwners}</Text>
+                                <Text style={styles.statLabel}>Owners</Text>
+                            </View>
+                            <View style={styles.statBox}>
+                                <Text style={styles.statNumber}>{adminStats.totalPlayers}</Text>
+                                <Text style={styles.statLabel}>Players</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.revenueCard}>
+                            <View style={[globalStyles.row, globalStyles.justifyBetween, { marginBottom: 12 }]}>
+                                <View>
+                                    <Text style={styles.revLabel}>Total Revenue</Text>
+                                    <Text style={styles.revValue}>€{adminStats.totalRevenue.toFixed(2)}</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end' }}>
+                                    <Text style={styles.revLabel}>App Fees (10%)</Text>
+                                    <Text style={[styles.revValue, { color: colors.success }]}>€{adminStats.totalFees.toFixed(2)}</Text>
+                                </View>
+                            </View>
+                            
+                            <Text style={[styles.revLabel, { marginTop: 8, marginBottom: 4 }]}>Revenue by Pitch</Text>
+                            {adminStats.pitchStats.filter(p => p.revenue > 0).map(pitch => (
+                                <View key={pitch.id} style={styles.pitchRevRow}>
+                                    <Text style={styles.pitchRevName} numberOfLines={1}>{pitch.name}</Text>
+                                    <Text style={styles.pitchRevAmount}>€{pitch.revenue.toFixed(2)}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </>
+                )}
+                
+                <View style={[globalStyles.row, globalStyles.justifyBetween, globalStyles.alignCenter, { marginTop: 24, marginBottom: 16 }]}>
+                    <Text style={styles.sectionTitle}>Pitch Approvals</Text>
+                    <TouchableOpacity onPress={() => setShowApprovals(!showApprovals)}>
+                        <Text style={{ fontSize: 12, color: colors.primary, padding: 5 }}>{showApprovals ? 'Hide' : 'Show'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
     };
 
     const getStatusStyle = (status) => {
@@ -109,19 +237,19 @@ const AdminPitchesScreen = () => {
         <SafeAreaView style={globalStyles.container}>
             <FlatList
                 contentContainerStyle={globalStyles.content}
-                data={pitches}
+                data={showApprovals ? pitches : []}
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
                 }
-                ListHeaderComponent={
-                    <Text style={globalStyles.title}>Pitch Approvals</Text>
-                }
+                ListHeaderComponent={renderStatsHeader}
                 ListEmptyComponent={
-                    <View style={styles.empty}>
-                        <Text style={globalStyles.caption}>No pitches found.</Text>
-                    </View>
+                    showApprovals ? (
+                        <View style={styles.empty}>
+                            <Text style={globalStyles.caption}>No pitches found.</Text>
+                        </View>
+                    ) : null
                 }
             />
         </SafeAreaView>
@@ -129,6 +257,76 @@ const AdminPitchesScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: colors.text,
+    },
+    statsContainer: {
+        marginBottom: 10,
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    statBox: {
+        width: '48%',
+        backgroundColor: colors.surface,
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: colors.lightGray,
+        alignItems: 'center',
+    },
+    statNumber: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: colors.primary,
+    },
+    statLabel: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: 4,
+        fontWeight: '600',
+    },
+    revenueCard: {
+        backgroundColor: colors.text,
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 10,
+    },
+    revLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    revValue: {
+        color: colors.white,
+        fontSize: 22,
+        fontWeight: '800',
+        marginTop: 4,
+    },
+    pitchRevRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    pitchRevName: {
+        color: colors.white,
+        fontSize: 14,
+        flex: 1,
+        marginRight: 10,
+    },
+    pitchRevAmount: {
+        color: colors.white,
+        fontSize: 14,
+        fontWeight: '700',
+    },
     pitchName: {
         fontSize: 18,
         fontWeight: '700',

@@ -17,6 +17,12 @@ class Invitation {
         return $this->db->resultSet();
     }
 
+    public function getMatchInvitations($match_id) {
+        $this->db->query("SELECT invitee_id FROM match_invitations WHERE match_id = :match_id");
+        $this->db->bind(":match_id", $match_id);
+        return $this->db->resultSet();
+    }
+
     public function createInvitation($data) {
         $this->db->query('INSERT INTO match_invitations (match_id, inviter_id, invitee_id) VALUES (:match_id, :inviter_id, :invitee_id)');
         $this->db->bind(':match_id', $data['match_id']);

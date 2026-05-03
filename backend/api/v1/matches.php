@@ -19,7 +19,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Route based on request method
 switch ($method) {
     case 'GET':
-        if (isset($_GET['id'])) {
+        if (isset($_GET['all'])) { $result = $match->getMatches(); ApiResponse::success('All matches retrieved', $result); } elseif (isset($_GET['id'])) {
             $match_id = intval($_GET['id']);
             if ($match_id <= 0) {
                 ApiResponse::validationError('Invalid match ID');

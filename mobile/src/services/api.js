@@ -69,6 +69,10 @@ export const getPublicMatches = async () => {
     return fetchJson(`${API_URL}/matches.php`, { headers: buildHeaders() });
 };
 
+export const getMatches = async () => {
+    return fetchJson(`${API_URL}/matches.php?all=true`, { headers: buildHeaders() });
+};
+
 export const getMatchDetails = async (matchId) => {
     return fetchJson(`${API_URL}/matches.php?id=${matchId}`, { headers: buildHeaders() });
 };
@@ -179,7 +183,11 @@ export const submitReview = async (reviewData) => {
 
 // Invitation APIs
 export const getInvitations = async (userId) => {
-    return fetchJson(`${API_URL}/invitations.php?user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/notifications.php?user_id=${userId}`, { headers: buildHeaders() });
+};
+
+export const getMatchInvitations = async (matchId) => {
+    return fetchJson(`${API_URL}/invitations.php?match_id=${matchId}`, { headers: buildHeaders() });
 };
 
 export const sendInvitation = async (invitationData) => {

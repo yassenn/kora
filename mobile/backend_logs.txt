@@ -1,0 +1,4 @@
+[Sat May  2 13:30:26 2026] PHP 8.3.6 Development Server (http://127.0.0.1:8000) started
+[Sat May  2 13:30:28 2026] 127.0.0.1:44556 Accepted
+[Sat May  2 13:30:28 2026] 127.0.0.1:44556 [200]: GET /api/v1/users.php
+[Sat May  2 13:30:28 2026] 127.0.0.1:44556 Closing

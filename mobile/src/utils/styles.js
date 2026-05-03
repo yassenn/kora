@@ -118,4 +118,17 @@ export const globalStyles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
 });

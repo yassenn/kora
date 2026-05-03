@@ -210,11 +210,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         marginHorizontal: 5,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.lightGray,
     },
     statValue: {
         fontSize: 20,
@@ -259,11 +256,6 @@ const styles = StyleSheet.create({
     },
     activeRole: {
         backgroundColor: colors.white,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
     },
     roleButtonText: {
         fontSize: 14,

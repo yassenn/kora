@@ -112,29 +112,40 @@ const CreateMatchScreen = ({ navigation, route }) => {
         }
         
         setLoading(true);
-        const datePart = selectedDate.toISOString().split('T')[0];
+        // Use local date part YYYY-MM-DD instead of toISOString() which shifts to UTC
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const datePart = `${year}-${month}-${day}`;
+        
         const fullMatchDate = `${datePart} ${selectedTime}`;
 
         const matchData = {
-            pitch_id: pitchId,
+            pitch_id: String(pitchId),
             match_type: matchType,
             match_size: matchSize,
             duration: parseInt(duration, 10),
             match_date: fullMatchDate,
-            creator_id: user?.id,
+            creator_id: String(user?.id),
         };
+
+        console.log('[CreateMatch] Sending data:', matchData);
 
         try {
             const result = await createMatch(matchData);
+            console.log('[CreateMatch] API Result:', result);
             if (result.success) {
                 Alert.alert('Success', 'Match organized successfully!', [
                     { text: 'Great!', onPress: () => navigation.goBack() },
                 ]);
             } else {
-                Alert.alert('Error', result.message || 'Failed to create match');
+                const errorMsg = result.message || 'Failed to create match';
+                const details = result.data ? JSON.stringify(result.data) : '';
+                Alert.alert('Error', `${errorMsg}\n${details}`);
             }
         } catch (error) {
-            Alert.alert('Error', 'An unexpected error occurred');
+            console.error('[CreateMatch] Unexpected error:', error);
+            Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
         } finally {
             setLoading(false);
         }
