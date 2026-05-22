@@ -1,41 +1,132 @@
+import { Platform } from 'react-native';
 import { CONFIG } from '../config';
 
 const API_URL = CONFIG.API_URL;
 
 let AUTH_TOKEN = null;
+let REFRESH_TOKEN = null;
+let onTokenRefresh = null;
 
-export const setAuthToken = (token) => { AUTH_TOKEN = token; };
+export const setAuthTokens = (accessToken, refreshToken) => { 
+    AUTH_TOKEN = accessToken; 
+    REFRESH_TOKEN = refreshToken;
+};
+
+export const setAuthToken = (token) => {
+    AUTH_TOKEN = token;
+};
+
+export const setOnTokenRefresh = (callback) => {
+    onTokenRefresh = callback;
+};
 
 const buildHeaders = (isJson = false) => {
     const headers = {};
     if (isJson) headers['Content-Type'] = 'application/json';
     if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
+    
+    // Security Metadata (Used for suspicious activity tracking)
+    // Note: For more detailed info like Phone Model or IMEI, 
+    // you should install 'react-native-device-info'
+    headers['X-OS'] = Platform.OS;
+    headers['X-ANDROID-VERSION'] = Platform.Version?.toString() || 'N/A';
+    
     return headers;
 };
 
-// Helper to fetch and parse JSON with better errors
-const fetchJson = async (url, options) => {
-    console.log(`[API Request] ${options?.method || 'GET'} ${url}`);
+// Helper to refresh token
+export const refreshToken = async () => {
+    if (!REFRESH_TOKEN) throw new Error('No refresh token available');
+    
+    try {
+        const response = await fetch(`${API_URL}/refresh.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: REFRESH_TOKEN }),
+        });
+        
+        const res = await response.json();
+        if (res.success) {
+            const { token, refresh_token } = res.data;
+            setAuthTokens(token, refresh_token);
+            if (onTokenRefresh) {
+                onTokenRefresh(token, refresh_token);
+            }
+            return token;
+        } else {
+            throw new Error(res.message || 'Refresh failed');
+        }
+    } catch (error) {
+        console.error('Failed to refresh token:', error);
+        throw error;
+    }
+};
+
+// Helper to fetch and parse JSON with better errors and automatic retry
+const fetchJson = async (url, options, retry = true) => {
+    if (__DEV__) {
+        console.log(`[API Request] ${options?.method || 'GET'} ${url}`);
+    }
+    
+    // Support HttpOnly cookies on web (VULN-004)
+    if (Platform.OS === 'web') {
+        options = { ...options, credentials: 'include' };
+    }
+
     try {
         const response = await fetch(url, options);
+        
+        // Handle 401 Unauthorized
+        if (response.status === 401 && retry && REFRESH_TOKEN) {
+            if (__DEV__) {
+                console.log('Access token expired, attempting refresh...');
+            }
+            try {
+                const newToken = await refreshToken();
+                // Retry with new token
+                const newOptions = {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${newToken}`
+                    }
+                };
+                return fetchJson(url, newOptions, false);
+            } catch (refreshErr) {
+                if (__DEV__) {
+                    console.error('Refresh retry failed', refreshErr);
+                }
+                throw new Error('AUTH_EXPIRED');
+            }
+        }
+
         const text = await response.text();
-        console.log(`[API Response] ${response.status} from ${url}: ${text.slice(0, 100)}...`);
+        
+        if (__DEV__) {
+            console.log(`[API Response] ${response.status} from ${url}`);
+        }
+
         if (!response.ok) {
-            const snippet = text ? text.trim().slice(0, 300) : 'No response body';
-            throw new Error(`HTTP ${response.status}: ${snippet}`);
+            throw new Error(text || `HTTP ${response.status}`);
         }
         try {
             return JSON.parse(text);
         } catch (err) {
-            throw new Error(`Invalid JSON response: ${text.slice(0, 500)}`);
+            throw new Error('Invalid JSON response');
         }
     } catch (error) {
-        console.error(`[API Error] for ${url}:`, error);
+        if (__DEV__ && error.message !== 'AUTH_EXPIRED') {
+            console.error(`[API Error] for ${url}: ${error.message}`);
+        }
         throw error;
     }
 };
 
 // User APIs
+export const me = async () => {
+    return fetchJson(`${API_URL}/me.php`, { headers: buildHeaders() });
+};
+
 export const login = async (email, password) => {
     return fetchJson(`${API_URL}/users.php`, {
         method: 'POST',
@@ -52,8 +143,16 @@ export const register = async (userData) => {
     });
 };
 
+export const verifyOTP = async (userId, code) => {
+    return fetchJson(`${API_URL}/verify.php`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify({ user_id: userId, code }),
+    });
+};
+
 export const getUserStats = async (userId) => {
-    return fetchJson(`${API_URL}/users.php?stats_for_user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/users.php?stats_for_user_id=${encodeURIComponent(userId)}`, { headers: buildHeaders() });
 };
 
 export const switchUserRole = async (userId, role) => {
@@ -61,6 +160,14 @@ export const switchUserRole = async (userId, role) => {
         method: 'PUT',
         headers: buildHeaders(true),
         body: JSON.stringify({ id: userId, user_type: role }),
+    });
+};
+
+export const updateFcmToken = async (fcmToken) => {
+    return fetchJson(`${API_URL}/users.php`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify({ type: 'update_fcm_token', fcm_token: fcmToken }),
     });
 };
 
@@ -74,7 +181,7 @@ export const getMatches = async () => {
 };
 
 export const getMatchDetails = async (matchId) => {
-    return fetchJson(`${API_URL}/matches.php?id=${matchId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/matches.php?id=${encodeURIComponent(matchId)}`, { headers: buildHeaders() });
 };
 
 export const createMatch = async (matchData) => {
@@ -110,11 +217,11 @@ export const updatePlayerStats = async (statsData) => {
 };
 
 export const getUpcomingMatches = async (userId) => {
-    return fetchJson(`${API_URL}/matches.php?upcoming_for_user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/matches.php?upcoming_for_user_id=${encodeURIComponent(userId)}`, { headers: buildHeaders() });
 };
 
 export const checkAvailability = async (pitchId, date) => {
-    return fetchJson(`${API_URL}/matches.php?check_availability=true&pitch_id=${pitchId}&date=${date}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/matches.php?check_availability=true&pitch_id=${encodeURIComponent(pitchId)}&date=${encodeURIComponent(date)}`, { headers: buildHeaders() });
 };
 
 // Pitch APIs
@@ -122,8 +229,12 @@ export const getPitches = async () => {
     return fetchJson(`${API_URL}/pitches.php`, { headers: buildHeaders() });
 };
 
+export const getPitchDetails = async (pitchId) => {
+    return fetchJson(`${API_URL}/pitches.php?id=${encodeURIComponent(pitchId)}`, { headers: buildHeaders() });
+};
+
 export const getRecentPitches = async (limit = 5) => {
-    return fetchJson(`${API_URL}/pitches.php?recent=true&limit=${limit}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/pitches.php?recent=true&limit=${encodeURIComponent(limit)}`, { headers: buildHeaders() });
 };
 
 export const createPitch = async (pitchData) => {
@@ -152,7 +263,7 @@ export const updatePitchStatus = async (pitchId, status) => {
 
 // Notification APIs
 export const getNotifications = async (userId) => {
-    return fetchJson(`${API_URL}/notifications.php?user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/notifications.php?user_id=${encodeURIComponent(userId)}`, { headers: buildHeaders() });
 };
 
 export const markNotificationRead = async (id) => {
@@ -164,13 +275,23 @@ export const markNotificationRead = async (id) => {
 };
 
 // User Discovery
-export const getUsers = async () => {
-    return fetchJson(`${API_URL}/users.php`, { headers: buildHeaders() });
+export const getUsers = async (search = '') => {
+    const url = search ? `${API_URL}/users.php?search=${encodeURIComponent(search)}` : `${API_URL}/users.php`;
+    return fetchJson(url, { headers: buildHeaders() });
+};
+
+// Admin APIs
+export const getSuspiciousUsers = async () => {
+    return fetchJson(`${API_URL}/admin/suspicious.php`, { headers: buildHeaders() });
+};
+
+export const getUserSuspiciousActivity = async (userId) => {
+    return fetchJson(`${API_URL}/admin/suspicious.php?user_id=${encodeURIComponent(userId)}`, { headers: buildHeaders() });
 };
 
 // Review APIs
 export const getPitchReviews = async (pitchId) => {
-    return fetchJson(`${API_URL}/reviews.php?pitch_id=${pitchId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/reviews.php?pitch_id=${encodeURIComponent(pitchId)}`, { headers: buildHeaders() });
 };
 
 export const submitReview = async (reviewData) => {
@@ -183,11 +304,11 @@ export const submitReview = async (reviewData) => {
 
 // Invitation APIs
 export const getInvitations = async (userId) => {
-    return fetchJson(`${API_URL}/notifications.php?user_id=${userId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/notifications.php?user_id=${encodeURIComponent(userId)}`, { headers: buildHeaders() });
 };
 
 export const getMatchInvitations = async (matchId) => {
-    return fetchJson(`${API_URL}/invitations.php?match_id=${matchId}`, { headers: buildHeaders() });
+    return fetchJson(`${API_URL}/invitations.php?match_id=${encodeURIComponent(matchId)}`, { headers: buildHeaders() });
 };
 
 export const sendInvitation = async (invitationData) => {
@@ -203,5 +324,26 @@ export const respondToInvitation = async (invitationId, status) => {
         method: 'PATCH',
         headers: buildHeaders(true),
         body: JSON.stringify({ id: invitationId, status }),
+    });
+};
+
+// Friend APIs
+export const getPendingFriends = async () => {
+    return fetchJson(`${API_URL}/friends.php?pending=true`, { headers: buildHeaders() });
+};
+
+export const sendFriendRequest = async (friendId) => {
+    return fetchJson(`${API_URL}/friends.php`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify({ friend_id: friendId }),
+    });
+};
+
+export const acceptFriendRequest = async (friendId) => {
+    return fetchJson(`${API_URL}/friends.php`, {
+        method: 'PATCH',
+        headers: buildHeaders(true),
+        body: JSON.stringify({ friend_id: friendId, action: 'accept' }),
     });
 };

@@ -17,11 +17,13 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import InvitationsScreen from '../screens/InvitationsScreen';
 import MyPitchesScreen from '../screens/MyPitchesScreen';
 import AdminPitchesScreen from '../screens/AdminPitchesScreen';
+import AdminSuspiciousScreen from '../screens/AdminSuspiciousScreen';
+import FriendsScreen from '../screens/FriendsScreen';
+import PlayerSearchScreen from '../screens/PlayerSearchScreen';
 
 import { colors } from '../utils/styles';
 import { useAuth } from '../context/AuthContext';
 import { Text, View, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -39,6 +41,8 @@ const HomeStack = () => (
         <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Dashboard' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
         <Stack.Screen name="Invitations" component={InvitationsScreen} options={{ title: 'Match Invites' }} />
+        <Stack.Screen name="Friends" component={FriendsScreen} options={{ title: 'Friends' }} />
+        <Stack.Screen name="PlayerSearch" component={PlayerSearchScreen} options={{ title: 'Find Players' }} />
     </Stack.Navigator>
 );
 
@@ -65,6 +69,7 @@ const ProfileStack = () => (
 const AdminStack = () => (
     <Stack.Navigator screenOptions={{ headerStyle: { elevation: 0, shadowOpacity: 0 }, headerTitleStyle: { fontWeight: '700' } }}>
         <Stack.Screen name="AdminPitches" component={AdminPitchesScreen} options={{ title: 'Manage Pitches' }} />
+        <Stack.Screen name="AdminSuspicious" component={AdminSuspiciousScreen} options={{ title: 'Security Audit' }} />
     </Stack.Navigator>
 );
 
@@ -97,7 +102,7 @@ const MainTabs = () => {
                     backgroundColor: colors.surface,
                     borderTopWidth: 1,
                     borderTopColor: colors.lightGray,
-                    height: 90, // Taller for safe zone and comfort
+                    height: 90,
                     paddingBottom: 20,
                     paddingTop: 10,
                 },
@@ -132,25 +137,6 @@ const AuthStack = () => (
 const AppNavigator = () => {
     const { user, loading } = useAuth();
 
-    const linking = {
-        prefixes: ['kora://'],
-        config: {
-            screens: {
-                Main: {
-                    initialRouteName: 'HomeTab',
-                    screens: {
-                        Matches: {
-                            initialRouteName: 'MatchesList',
-                            screens: {
-                                MatchDetails: 'match/:id',
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    };
-
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -160,7 +146,7 @@ const AppNavigator = () => {
     }
 
     return (
-        <NavigationContainer linking={linking}>
+        <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {user ? (
                     <Stack.Screen name="Main" component={MainTabs} />

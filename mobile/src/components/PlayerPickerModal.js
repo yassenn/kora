@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Modal, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { globalStyles, colors } from '../utils/styles';
-import { getUsers } from '../services/api';
+import { getFriends } from '../services/api';
 
 const PlayerPickerModal = ({ visible, onClose, onInvitePlayer, alreadyInvitedIds }) => {
     const [users, setUsers] = useState([]);
@@ -14,14 +14,11 @@ const PlayerPickerModal = ({ visible, onClose, onInvitePlayer, alreadyInvitedIds
         setLoading(true);
         setError(null);
         try {
-            const res = await getUsers();
+            const res = await getFriends();
             if (res && res.success && Array.isArray(res.data)) {
-                // Filter out already invited or joined players if needed
                 setUsers(res.data);
-            } else if (Array.isArray(res)) {
-                setUsers(res);
             } else {
-                setError(res?.message || 'Failed to fetch users');
+                setError(res?.message || 'Failed to fetch friends');
             }
         } catch (err) {
             setError(err.message || 'Network error');

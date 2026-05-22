@@ -23,12 +23,21 @@ class ApiResponse {
     /**
      * Send an error response
      */
-    public static function error($message = 'Error', $httpCode = 400) {
+    public static function error($message = 'Error', $httpCode = 400, $data = null) {
         http_response_code($httpCode);
+        
+        // In production, sanitize the error message if it looks like a system error
+        if (getenv('APP_ENV') === 'production') {
+            // If the message contains common PHP error markers, replace with generic text
+            if (strpos($message, 'Exception') !== false || strpos($message, 'SQLSTATE') !== false || strpos($message, 'at line') !== false) {
+                $message = 'An internal server error occurred';
+            }
+        }
+
         $response = [
             'success' => false,
             'message' => $message,
-            'data' => null
+            'data' => $data
         ];
         echo json_encode($response);
         exit();

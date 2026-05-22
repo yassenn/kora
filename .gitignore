@@ -17,3 +17,23 @@ yarn-error.log*
 .idea/
 *.iml
 .vscode/
+
+# Sensitive files
+.env
+.env.*
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!app.json
+!composer.json
+!composer.lock
+backend/config/firebase_credentials.json
+mobile/android/app/google-services.json
+
+# Security artifacts
+.gemini_security/
+**/ .gemini_security/
+
+# Temporary files
+backend/tmp/ratelimit/

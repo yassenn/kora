@@ -10,3 +10,8 @@
     RewriteRule ^([a-zA-Z]+)/?$ $1.php [L,QSA]
     RewriteRule ^([a-zA-Z]+)\?(.*)$ $1.php?$2 [L,QSA]
 </IfModule>
+
+<FilesMatch "\.(env|json|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

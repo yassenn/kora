@@ -8,30 +8,48 @@
  */
 
 function validateBearerToken() {
-    $headers = getallheaders();
+    $authHeader = null;
+    $token = null;
     
-    if (!isset($headers['Authorization'])) {
-        return null;
+    // Try getallheaders()
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (isset($headers['Authorization'])) {
+            $authHeader = $headers['Authorization'];
+        } elseif (isset($headers['authorization'])) {
+            $authHeader = $headers['authorization'];
+        }
     }
     
-    $authHeader = $headers['Authorization'];
-    
-    // Check if the Authorization header starts with "Bearer "
-    if (strpos($authHeader, 'Bearer ') !== 0) {
-        return null;
+    // Try $_SERVER
+    if (!$authHeader) {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+        } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
     }
     
-    // Extract the token
-    $token = substr($authHeader, 7);
+    if ($authHeader && strpos($authHeader, 'Bearer ') === 0) {
+        $token = substr($authHeader, 7);
+    }
     
-    // Validate token is not empty
+    // Fallback to cookie for web clients (VULN-004 fix)
+    if (!$token && isset($_COOKIE['token'])) {
+        $token = $_COOKIE['token'];
+    }
+    
     if (empty($token)) {
         return null;
     }
     
-    // TODO: Implement JWT verification here
-    // For now, we return the token if it's present and properly formatted
-    return $token;
+    // Verify JWT
+    $decoded = SimpleJWT::decode($token);
+    if (!$decoded) {
+        return null;
+    }
+    
+    return $decoded; // Returns payload (e.g., user_id)
 }
 
 /**

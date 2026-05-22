@@ -75,6 +75,11 @@ class SoccerMatch {
 
     // Create a new match
     public function createMatch($data) {
+        // Prevent bypassing the platform
+        if (isset($data['description']) && hasContactInfo($data['description'])) {
+            throw new Exception("Please do not share contact information in the match description.");
+        }
+
         $this->db->query('INSERT INTO matches (pitch_id, creator_id, match_type, match_size, duration, match_date) VALUES (:pitch_id, :creator_id, :match_type, :match_size, :duration, :match_date)');
         // Bind values
         $this->db->bind(':pitch_id', $data['pitch_id']);
@@ -100,11 +105,32 @@ class SoccerMatch {
             return false;
         }
     }
-
     // Join a match
     public function joinMatch($data) {
+        // 1. Check if player is already in the match
+        $this->db->query('SELECT id FROM match_players WHERE match_id = :match_id AND player_id = :player_id');
+        $this->db->bind(':match_id', $data['match_id']);
+        $this->db->bind(':player_id', $data['player_id']);
+        $this->db->single();
+        
+        if ($this->db->rowCount() > 0) {
+            return true; // Already joined
+        }
+
+        // 2. Prevent "Match Sabotage": Limit concurrent scheduled matches to 3
+        $this->db->query("SELECT COUNT(*) as active_count FROM match_players mp 
+                          JOIN matches m ON mp.match_id = m.id 
+                          WHERE mp.player_id = :player_id AND m.status = 'scheduled'");
+        $this->db->bind(':player_id', $data['player_id']);
+        $row = $this->db->single();
+        
+        if ($row && $row->active_count >= 3) {
+            throw new Exception("You can only be joined to 3 upcoming matches at once.");
+        }
+
         $this->db->query('INSERT INTO match_players (match_id, player_id) VALUES (:match_id, :player_id)');
-        // Bind values
+    // Bind values
+
         $this->db->bind(':match_id', $data['match_id']);
         $this->db->bind(':player_id', $data['player_id']);
 

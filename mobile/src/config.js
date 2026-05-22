@@ -1,3 +1,5 @@
+import Config from 'react-native-config';
+
 export const CONFIG = {
-    API_URL: 'http://localhost:8000/api/v1',
+    API_URL: 'http://localhost/api/v1',
 };

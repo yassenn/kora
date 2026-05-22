@@ -3,12 +3,13 @@ import { View, Text, ActivityIndicator, Alert, ScrollView, StyleSheet, Touchable
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import { globalStyles, colors } from '../utils/styles';
-import { getPitches, getPitchReviews, submitReview } from '../services/api';
+import { getPitchDetails, getPitchReviews, submitReview } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const PitchDetailsScreen = ({ route, navigation }) => {
     const pitchId = route.params?.id || route.params?.pitchId;
     const { user } = useAuth();
+    const isAdmin = user?.user_type === 'admin';
     
     const [pitch, setPitch] = useState(null);
     const [reviews, setReviews] = useState([]);
@@ -23,13 +24,12 @@ const PitchDetailsScreen = ({ route, navigation }) => {
         setLoading(true);
         try {
             const [pitchRes, reviewsRes] = await Promise.all([
-                getPitches(), // Get all and filter for now as there's no single pitch GET with full details yet
+                getPitchDetails(pitchId),
                 getPitchReviews(pitchId)
             ]);
 
             if (pitchRes.success) {
-                const found = pitchRes.data.find(p => p.id === pitchId);
-                setPitch(found);
+                setPitch(pitchRes.data);
             }
             if (reviewsRes.success) {
                 setReviews(reviewsRes.data);
@@ -104,10 +104,17 @@ const PitchDetailsScreen = ({ route, navigation }) => {
                             <Text style={styles.label}>Price:</Text>
                             <Text style={styles.value}>${pitch.price_per_hour}/hr</Text>
                         </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.label}>Contact:</Text>
-                            <Text style={styles.value}>{pitch.contact_number || 'N/A'}</Text>
-                        </View>
+                        {/* 
+                            SECURITY NOTE: VULN-003
+                            Client-side check only. Backend must enforce that contact_number 
+                            is only returned for authorized users.
+                        */}
+                        {isAdmin && (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.label}>Contact:</Text>
+                                <Text style={styles.value}>{pitch.contact_number || 'N/A'}</Text>
+                            </View>
+                        )}
                         <View style={styles.infoRow}>
                             <Text style={styles.label}>Hours:</Text>
                             <Text style={styles.value}>{pitch.opening_hours || 'Flexible'}</Text>

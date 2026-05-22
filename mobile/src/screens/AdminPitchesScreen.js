@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { globalStyles, colors } from '../utils/styles';
 import { getPitches, updatePitchStatus, getPublicMatches, getUsers } from '../services/api';
 import Button from '../components/Button';
 
 const AdminPitchesScreen = () => {
+    const navigation = useNavigation();
     const [pitches, setPitches] = useState([]);
     const [matches, setMatches] = useState([]);
     const [users, setUsers] = useState([]);
@@ -141,6 +143,20 @@ const AdminPitchesScreen = () => {
                                 <Text style={styles.statLabel}>Players</Text>
                             </View>
                         </View>
+
+                        <TouchableOpacity 
+                            style={styles.securityAuditCard}
+                            onPress={() => navigation.navigate('AdminSuspicious')}
+                        >
+                            <View style={globalStyles.row}>
+                                <Text style={{ fontSize: 24, marginRight: 12 }}>🛡️</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.securityTitle}>Security Audit</Text>
+                                    <Text style={styles.securitySubtitle}>Monitor suspicious activity and invalid data attempts.</Text>
+                                </View>
+                                <Text style={{ fontSize: 18, color: colors.primary }}>›</Text>
+                            </View>
+                        </TouchableOpacity>
 
                         <View style={styles.revenueCard}>
                             <View style={[globalStyles.row, globalStyles.justifyBetween, { marginBottom: 12 }]}>
@@ -348,6 +364,26 @@ const styles = StyleSheet.create({
     actionButton: {
         height: 44,
         marginVertical: 0,
+    },
+    securityAuditCard: {
+        backgroundColor: colors.surface,
+        padding: 16,
+        borderRadius: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.lightGray,
+        borderLeftWidth: 5,
+        borderLeftColor: colors.danger,
+    },
+    securityTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.text,
+    },
+    securitySubtitle: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: 2,
     },
     empty: {
         alignItems: 'center',

@@ -1,4 +1,4 @@
-package com.mobile
+package com.android.kora
 
 import android.os.Bundle;
 import com.facebook.react.ReactActivity

@@ -6,15 +6,19 @@ class Pitch {
         $this->db = new Database;
     }
 
-    // Get all pitches
+    // Get all pitches (basic info for listing)
     public function getPitches() {
-        $this->db->query('SELECT * FROM pitches');
+        $this->db->query('SELECT id, name, location, price_per_hour, opening_hours, status, owner_id FROM pitches');
         return $this->db->resultSet();
     }
 
     // Get pitch by ID
-    public function getPitchById($id) {
-        $this->db->query('SELECT * FROM pitches WHERE id = :id');
+    public function getPitchById($id, $isAdmin = false) {
+        $query = $isAdmin 
+            ? 'SELECT * FROM pitches WHERE id = :id'
+            : 'SELECT id, name, location, owner_id, status, price_per_hour, opening_hours, created_at FROM pitches WHERE id = :id';
+        
+        $this->db->query($query);
         $this->db->bind(':id', $id);
         return $this->db->single();
     }
@@ -67,8 +71,12 @@ class Pitch {
     }
 
     // Get recently added pitches
-    public function getRecentPitches($limit = 5) {
-        $this->db->query('SELECT * FROM pitches WHERE status = "approved" ORDER BY created_at DESC LIMIT :limit');
+    public function getRecentPitches($limit = 5, $isAdmin = false) {
+        $query = $isAdmin
+            ? 'SELECT * FROM pitches WHERE status = "approved" ORDER BY created_at DESC LIMIT :limit'
+            : 'SELECT id, name, location, owner_id, status, price_per_hour, opening_hours, created_at FROM pitches WHERE status = "approved" ORDER BY created_at DESC LIMIT :limit';
+            
+        $this->db->query($query);
         $this->db->bind(':limit', $limit);
         return $this->db->resultSet();
     }

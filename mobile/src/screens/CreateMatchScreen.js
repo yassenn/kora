@@ -129,11 +129,15 @@ const CreateMatchScreen = ({ navigation, route }) => {
             creator_id: String(user?.id),
         };
 
-        console.log('[CreateMatch] Sending data:', matchData);
+        if (__DEV__) {
+            console.log('[CreateMatch] Sending data for pitch:', matchData.pitch_id);
+        }
 
         try {
             const result = await createMatch(matchData);
-            console.log('[CreateMatch] API Result:', result);
+            if (__DEV__) {
+                console.log('[CreateMatch] API Result success:', result.success);
+            }
             if (result.success) {
                 Alert.alert('Success', 'Match organized successfully!', [
                     { text: 'Great!', onPress: () => navigation.goBack() },

@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS blocked_ips (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL UNIQUE,
+    reason TEXT,
+    blocked_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (blocked_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE users ADD COLUMN is_blocked TINYINT DEFAULT 0;

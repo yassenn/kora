@@ -18,7 +18,9 @@ const HomeScreen = ({ navigation }) => {
     const fetchData = useCallback(async () => {
         if (!user) return;
         try {
-            console.log('[HomeScreen] Fetching data for user:', user.id);
+            if (__DEV__) {
+                console.log('[HomeScreen] Fetching data for user session');
+            }
             const results = await Promise.allSettled([
                 getUserStats(user.id),
                 getUpcomingMatches(user.id),
@@ -86,6 +88,12 @@ const HomeScreen = ({ navigation }) => {
                             <Text style={styles.welcomeText}>{user?.username}!</Text>
                         </View>
                         <View style={globalStyles.row}>
+                            <TouchableOpacity 
+                                style={styles.iconButton} 
+                                onPress={() => navigation.navigate('Friends')}
+                            >
+                                <Text style={styles.iconText}>👥</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity 
                                 style={styles.iconButton} 
                                 onPress={() => navigation.navigate('Notifications')}
