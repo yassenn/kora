@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler/jestSetup';
 
 jest.mock('react-native-config', () => ({
-  API_URL: 'http://localhost:8000/api/v1',
+  API_URL: 'http://79.117.149.4/api/v1',
 }));
 
 jest.mock('react-native-encrypted-storage', () => ({
