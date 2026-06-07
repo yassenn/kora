@@ -13,6 +13,7 @@ import PitchesListScreen from '../screens/PitchesListScreen';
 import PitchDetailsScreen from '../screens/PitchDetailsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import VerifyScreen from '../screens/VerifyScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import InvitationsScreen from '../screens/InvitationsScreen';
 import MyPitchesScreen from '../screens/MyPitchesScreen';
@@ -131,6 +132,7 @@ const AuthStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Verify" component={VerifyScreen} />
     </Stack.Navigator>
 );
 

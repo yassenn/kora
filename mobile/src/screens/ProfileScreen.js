@@ -131,31 +131,33 @@ const ProfileScreen = ({ navigation }) => {
                     )}
                 </View>
 
-                <View style={{ marginTop: 30 }}>
-                    <Text style={[globalStyles.subtitle, { marginBottom: 16 }]}>Dev Tools: Switch Role</Text>
-                    <View style={styles.roleSwitcher}>
-                        <TouchableOpacity 
-                            style={[styles.roleButton, user?.user_type === 'player' && styles.activeRole]} 
-                            onPress={() => handleSwitchRole('player')}
-                        >
-                            <Text style={[styles.roleButtonText, user?.user_type === 'player' && styles.activeRoleText]}>Player</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={[styles.roleButton, user?.user_type === 'pitch_owner' && styles.activeRole]} 
-                            onPress={() => handleSwitchRole('pitch_owner')}
-                        >
-                            <Text style={[styles.roleButtonText, user?.user_type === 'pitch_owner' && styles.activeRoleText]}>Owner</Text>
-                        </TouchableOpacity>
+                {__DEV__ && (
+                    <View style={{ marginTop: 30 }}>
+                        <Text style={[globalStyles.subtitle, { marginBottom: 16 }]}>Dev Tools: Switch Role</Text>
+                        <View style={styles.roleSwitcher}>
+                            <TouchableOpacity 
+                                style={[styles.roleButton, user?.user_type === 'player' && styles.activeRole]} 
+                                onPress={() => handleSwitchRole('player')}
+                            >
+                                <Text style={[styles.roleButtonText, user?.user_type === 'player' && styles.activeRoleText]}>Player</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={[styles.roleButton, user?.user_type === 'pitch_owner' && styles.activeRole]} 
+                                onPress={() => handleSwitchRole('pitch_owner')}
+                            >
+                                <Text style={[styles.roleButtonText, user?.user_type === 'pitch_owner' && styles.activeRoleText]}>Owner</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity 
-                            style={[styles.roleButton, user?.user_type === 'admin' && styles.activeRole]} 
-                            onPress={() => handleSwitchRole('admin')}
-                        >
-                            <Text style={[styles.roleButtonText, user?.user_type === 'admin' && styles.activeRoleText]}>Admin</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.roleButton, user?.user_type === 'admin' && styles.activeRole]} 
+                                onPress={() => handleSwitchRole('admin')}
+                            >
+                                <Text style={[styles.roleButtonText, user?.user_type === 'admin' && styles.activeRoleText]}>Admin</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                )}
 
                 <View style={styles.footer}>
                     <Button 
@@ -164,7 +166,30 @@ const ProfileScreen = ({ navigation }) => {
                         variant="secondary"
                         style={{ borderColor: colors.danger }}
                     />
-                    <Text style={[globalStyles.caption, { textAlign: 'center', marginTop: 20 }]}>
+                    
+                    <TouchableOpacity 
+                        style={{ marginTop: 20, alignSelf: 'center' }}
+                        onPress={() => {
+                            Alert.alert(
+                                'Delete Account',
+                                'This action is permanent and will delete all your data. Are you sure?',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { 
+                                        text: 'Delete', 
+                                        style: 'destructive',
+                                        onPress: () => Alert.alert('Request Sent', 'Your account deletion request has been received.')
+                                    }
+                                ]
+                            );
+                        }}
+                    >
+                        <Text style={[globalStyles.caption, { color: colors.danger, fontWeight: '700' }]}>
+                            Delete Account
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={[globalStyles.caption, { textAlign: 'center', marginTop: 30 }]}>
                         Kora Version 1.0.0
                     </Text>
                 </View>

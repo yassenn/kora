@@ -114,17 +114,15 @@ export const AuthProvider = ({ children }) => {
         logout();
         throw new Error('Session expired. Please log in again.');
       }
-      // Check for verification requirement in the error message
-      if (err.message.includes('"needs_verification":true')) {
+      // Check for verification requirement in the message string [USER_ID:XX]
+      if (err.message.includes('Verification required') && err.message.includes('[USER_ID:')) {
         try {
-          // Extract JSON from error message (HTTP 403: {"success":false,...})
-          const jsonStr = err.message.substring(err.message.indexOf('{'));
-          const errorData = JSON.parse(jsonStr);
-          if (errorData.needs_verification) {
-            return { needsVerification: true, userId: errorData.user_id };
+          const match = err.message.match(/\[USER_ID:(\d+)\]/);
+          if (match && match[1]) {
+            return { needsVerification: true, userId: match[1] };
           }
         } catch (e) {
-          console.error('Failed to parse verification error', e);
+          console.warn('Failed to parse verification ID', e);
         }
       }
       throw err;

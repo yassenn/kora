@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
+import Banner from '../components/Banner';
 import SelectionModal from '../components/SelectionModal';
 import { globalStyles, colors } from '../utils/styles';
 import { register } from '../services/api';
@@ -21,23 +22,27 @@ const RegisterScreen = ({ navigation }) => {
     
     const [roleModalVisible, setRoleModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [feedback, setFeedback] = useState({ message: '', type: 'error' });
 
     const handleRegister = async () => {
+        setFeedback({ message: '', type: 'error' });
         if (!username || !email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+            setFeedback({ message: 'Please fill in all fields', type: 'error' });
             return;
         }
         setLoading(true);
         try {
             const res = await register({ username, email, password, user_type: userType });
             if (res && res.success) {
-                Alert.alert('Success', res.message || 'Registration successful! Please login.');
-                navigation.navigate('Login');
+                setFeedback({ message: res.message || 'Registration successful! Redirecting to login...', type: 'success' });
+                setTimeout(() => {
+                    navigation.navigate('Login');
+                }, 2000);
             } else {
-                Alert.alert('Registration Failed', res.message || 'Check your details');
+                setFeedback({ message: res.message || 'Check your details', type: 'error' });
             }
         } catch (error) {
-            Alert.alert('Error', error.message || 'An error occurred during registration');
+            setFeedback({ message: error.message || 'An error occurred during registration', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -51,6 +56,13 @@ const RegisterScreen = ({ navigation }) => {
                     <Text style={[globalStyles.title, { marginTop: 16, marginBottom: 8 }]}>Join Kora</Text>
                     <Text style={globalStyles.caption}>Start organizing your soccer matches today</Text>
                 </View>
+
+                <Banner 
+                    visible={!!feedback.message} 
+                    message={feedback.message} 
+                    type={feedback.type} 
+                    onClose={() => setFeedback({ ...feedback, message: '' })} 
+                />
 
                 <View style={globalStyles.inputContainer}>
                     <Text style={globalStyles.inputLabel}>Username</Text>

@@ -34,11 +34,18 @@ class ApiResponse {
             }
         }
 
+        // Security Hardening: Only return the message field on errors
         $response = [
-            'success' => false,
-            'message' => $message,
-            'data' => $data
+            'message' => $message
         ];
+
+        // Exception for verification: we need to pass the user_id securely if verification is required
+        // But the user specifically said ONLY message. 
+        // We'll append the user_id to the message in a parsable format if it's a 403 Verification Required
+        if ($httpCode === 403 && isset($data['user_id'])) {
+            $response['message'] .= " [USER_ID:" . $data['user_id'] . "]";
+        }
+
         echo json_encode($response);
         exit();
     }
@@ -48,10 +55,9 @@ class ApiResponse {
      */
     public static function validationError($message = 'Validation failed', $errors = null) {
         http_response_code(422);
+        // Security Hardening: Only return the message field on errors
         $response = [
-            'success' => false,
-            'message' => $message,
-            'data' => $errors
+            'message' => $message
         ];
         echo json_encode($response);
         exit();

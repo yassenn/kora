@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
+import Banner from '../components/Banner';
 import { globalStyles, colors } from '../utils/styles';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,20 +11,26 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const { login: authLogin } = useAuth();
 
     const handleLogin = async () => {
+        setError('');
         if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+            setError('Please fill in all fields');
             return;
         }
         setLoading(true);
         try {
-            await authLogin(email, password);
+            const result = await authLogin(email, password);
+            if (result && result.needsVerification) {
+                navigation.navigate('Verify', { userId: result.userId, email });
+                return;
+            }
             // AppNavigator handles navigation via user state
-        } catch (error) {
-            Alert.alert('Login Failed', error.message || 'Invalid email or password');
+        } catch (err) {
+            setError(err.message || 'Invalid email or password');
         } finally {
             setLoading(false);
         }
@@ -41,6 +48,13 @@ const LoginScreen = ({ navigation }) => {
                         <Text style={[globalStyles.title, { marginTop: 20, marginBottom: 8 }]}>Welcome back</Text>
                         <Text style={globalStyles.caption}>Login to your Kora account</Text>
                     </View>
+
+                    <Banner 
+                        visible={!!error} 
+                        message={error} 
+                        type="error" 
+                        onClose={() => setError('')} 
+                    />
 
                     <View style={globalStyles.inputContainer}>
                         <Text style={globalStyles.inputLabel}>Email</Text>

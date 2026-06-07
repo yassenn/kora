@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import { globalStyles, colors } from '../utils/styles';
 import { createMatch, checkAvailability } from '../services/api';
 import DatePicker from 'react-native-date-picker';
 import { useAuth } from '../context/AuthContext';
+import { useFeedback } from '../context/FeedbackContext';
 import PitchPickerModal from '../components/PitchPickerModal';
 import SelectionModal from '../components/SelectionModal';
 
 const MATCH_TYPES = [
+// ... (omitting for brevity, but I must provide the full file if I use write_file, or use replace carefully)
     { label: 'Public', value: 'public' },
     { label: 'Private', value: 'private' },
 ];
@@ -31,6 +33,7 @@ const DURATION_OPTIONS = [
 
 const CreateMatchScreen = ({ navigation, route }) => {
     const { user } = useAuth();
+    const { showFeedback } = useFeedback();
     const [pitchId, setPitchId] = useState(route?.params?.pitchId || '');
     const [pitchName, setPitchName] = useState(route?.params?.pitchName || '');
     const [matchType, setMatchType] = useState('public');
@@ -107,7 +110,7 @@ const CreateMatchScreen = ({ navigation, route }) => {
 
     const handleCreateMatch = async () => {
         if (!pitchId || !selectedTime) {
-            Alert.alert('Error', 'Please select a venue and an available time slot');
+            showFeedback('Error', 'Please select a venue and an available time slot', 'error');
             return;
         }
         
@@ -139,17 +142,17 @@ const CreateMatchScreen = ({ navigation, route }) => {
                 console.log('[CreateMatch] API Result success:', result.success);
             }
             if (result.success) {
-                Alert.alert('Success', 'Match organized successfully!', [
-                    { text: 'Great!', onPress: () => navigation.goBack() },
-                ]);
+                showFeedback('Success', 'Match organized successfully!', 'success', () => {
+                    navigation.goBack();
+                });
             } else {
                 const errorMsg = result.message || 'Failed to create match';
                 const details = result.data ? JSON.stringify(result.data) : '';
-                Alert.alert('Error', `${errorMsg}\n${details}`);
+                showFeedback('Error', `${errorMsg} ${details}`, 'error');
             }
         } catch (error) {
-            console.error('[CreateMatch] Unexpected error:', error);
-            Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
+            console.warn('[CreateMatch] Unexpected error:', error);
+            showFeedback('Error', `An unexpected error occurred: ${error.message}`, 'error');
         } finally {
             setLoading(false);
         }

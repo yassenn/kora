@@ -107,7 +107,12 @@ const fetchJson = async (url, options, retry = true) => {
         }
 
         if (!response.ok) {
-            throw new Error(text || `HTTP ${response.status}`);
+            try {
+                const errorObj = JSON.parse(text);
+                throw new Error(errorObj.message || text || `HTTP ${response.status}`);
+            } catch (e) {
+                throw new Error(text || `HTTP ${response.status}`);
+            }
         }
         try {
             return JSON.parse(text);
@@ -116,7 +121,7 @@ const fetchJson = async (url, options, retry = true) => {
         }
     } catch (error) {
         if (__DEV__ && error.message !== 'AUTH_EXPIRED') {
-            console.error(`[API Error] for ${url}: ${error.message}`);
+            console.warn(`[API Error] for ${url}: ${error.message}`);
         }
         throw error;
     }
