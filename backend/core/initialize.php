@@ -22,11 +22,18 @@ if (getenv('APP_ENV') === 'production') {
     ini_set("display_errors", 0);
 } else {
     error_reporting(E_ALL);
-    ini_set("display_errors", 0);
+    ini_set("display_errors", 1);
 }
+
+
 
 // Define App Root
 define('APPROOT', dirname(__DIR__));
+// Development logging
+if (getenv('APP_ENV') !== 'production') {
+    ini_set('log_errors', 1);
+    ini_set('error_log', '/tmp/php-error.log');
+}
 
 // CORS and Security Headers
 $allowedOrigin = getenv('CORS_ALLOWED_ORIGIN') ?: '*';

@@ -25,7 +25,7 @@ class ApiResponse {
      */
     public static function error($message = 'Error', $httpCode = 400, $data = null) {
         http_response_code($httpCode);
-        
+
         // In production, sanitize the error message if it looks like a system error
         if (getenv('APP_ENV') === 'production') {
             // If the message contains common PHP error markers, replace with generic text
@@ -40,10 +40,15 @@ class ApiResponse {
         ];
 
         // Exception for verification: we need to pass the user_id securely if verification is required
-        // But the user specifically said ONLY message. 
+        // But the user specifically said ONLY message.
         // We'll append the user_id to the message in a parsable format if it's a 403 Verification Required
         if ($httpCode === 403 && isset($data['user_id'])) {
             $response['message'] .= " [USER_ID:" . $data['user_id'] . "]";
+        }
+
+        // In development, include debug data if available
+        if (getenv('APP_ENV') !== 'production' && $data !== null) {
+            $response['data'] = $data;
         }
 
         echo json_encode($response);
@@ -59,6 +64,12 @@ class ApiResponse {
         $response = [
             'message' => $message
         ];
+
+        // In development, include debug data if available
+        if (getenv('APP_ENV') !== 'production' && $errors !== null) {
+            $response['errors'] = $errors;
+        }
+
         echo json_encode($response);
         exit();
     }
